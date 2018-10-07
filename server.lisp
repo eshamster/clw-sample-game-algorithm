@@ -51,8 +51,7 @@
                         (:div
                          :id "panel-content"
                          (:div
-                          (:a :href "https://github.com/eshamster/clw-sample-game-algorithm" "Clw-sample-game-algorithm")
-                          " / sample")
+                          (:a :href "https://github.com/eshamster/clw-sample-game-algorithm" "Clw-sample-game-algorithm"))
                          (:ul
                           :id "sample-list"
                           (dolist (name (sort (get-sample-name-list) #'string<))
