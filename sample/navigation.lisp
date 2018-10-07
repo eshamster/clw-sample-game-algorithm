@@ -5,12 +5,19 @@
         :cl-web-2d-game)
   (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
                 :init-nav-mesh
+                :setf-nav-mesh-display-p
                 :update-nav-mesh))
 (in-package :clw-sample-game-algorithm/sample/navigation)
 
 (clw-sample-game-algorithm/utils:use-this-package-as-sample)
 
 (defvar.ps+ *nav-mesh* nil)
+
+(defun.ps+ init-my-gui ()
+  (init-gui)
+  (add-panel-bool "Dispaly Mesh" t
+                  :on-change (lambda (value)
+                               (setf-nav-mesh-display-p *nav-mesh* value))))
 
 (defun.ps+ init-func (scene)
   (setf-collider-model-enable nil)
@@ -28,7 +35,8 @@
                                (with-slots (x y) point-2d
                                  (setf x (get-mouse-x)
                                        y (get-mouse-y)))))))
-    (add-ecs-entity circle))
+    (add-ecs-entity circle)
+    (init-my-gui))
   (setf *nav-mesh*
         (init-nav-mesh :rect (make-rect-2d :x 0 :y 0
                                            :width 800 :height 600)

@@ -4,6 +4,7 @@
         :cl-ps-ecs
         :cl-web-2d-game)
   (:export :init-nav-mesh
+           :setf-nav-mesh-display-p
            :update-nav-mesh))
 (in-package :clw-sample-game-algorithm/sample/navigation/nav-mesh)
 
@@ -41,6 +42,13 @@
           (disable-piece piece nav-mesh)
           (enable-piece piece nav-mesh)))))
 
+(defun.ps+ setf-nav-mesh-display-p (nav-mesh value)
+  (do-nav-mesh-piece (piece nav-mesh)
+    (set-entity-param piece :display-p value)
+    (if value
+        (enable-model-2d piece)
+        (disable-model-2d piece))))
+
 (defun.ps+ calc-piece-id (x y nav-mesh)
   (+ (* y (nav-mesh-2d-num-x nav-mesh))
      x))
@@ -73,11 +81,13 @@
 
 (defun.ps+ enable-piece (piece nav-mesh)
   (setf (get-piece-state piece nav-mesh) t)
-  (enable-model-2d piece))
+  (when (get-entity-param piece :display-p)
+    (enable-model-2d piece)))
 
 (defun.ps+ disable-piece (piece nav-mesh)
   (setf (get-piece-state piece nav-mesh) nil)
-  (disable-model-2d piece))
+  (when (get-entity-param piece :display-p)
+    (disable-model-2d piece)))
 
 (defvar.ps+ *grid-piece-depth* -100)
 
@@ -100,5 +110,6 @@
      (make-model-2d :model (make-wired-rect :width width :height height
                                             :color #x22ff22)
                     :depth (1+ *grid-piece-depth*))
-     (init-entity-params :id id))
+     (init-entity-params :id id
+                         :display-p t))
     piece))
