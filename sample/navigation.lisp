@@ -15,6 +15,20 @@
 
 (defvar.ps+ *nav-mesh* nil)
 
+(defun.ps+ init-mouse-entity ()
+  (let ((mouse (make-ecs-entity)))
+    (add-entity-tag mouse :mouse)
+    (add-ecs-component-list
+     mouse
+     (make-point-2d :x -1000 :y -1000)
+     (make-physic-circle :r 0)
+     (make-script-2d :func (lambda (entity)
+                             (with-ecs-components (point-2d) entity
+                               (with-slots (x y) point-2d
+                                 (setf x (get-mouse-x)
+                                       y (get-mouse-y)))))))
+    (add-ecs-entity mouse)))
+
 (defun.ps+ init-my-gui ()
   (init-gui)
   (add-panel-bool "Dispaly Mesh" t
@@ -31,7 +45,8 @@
                        :num-x 20
                        :num-y 15))
   (init-default-systems :scene scene)
-  (init-input))
+  (init-input)
+  (init-mouse-entity))
 
 (defun.ps+ update-func ()
   (update-nav-mesh *nav-mesh*))
