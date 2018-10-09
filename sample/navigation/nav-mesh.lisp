@@ -5,7 +5,12 @@
         :cl-web-2d-game)
   (:export :init-nav-mesh
            :setf-nav-mesh-display-p
-           :update-nav-mesh))
+           :update-nav-mesh
+
+           :do-nav-mesh-grid
+           :get-nav-mesh-piece-state
+           :nav-mesh-2d-num-x
+           :nav-mesh-2d-num-y))
 (in-package :clw-sample-game-algorithm/sample/navigation/nav-mesh)
 
 (defstruct.ps+ nav-mesh-2d
@@ -76,8 +81,12 @@
       grid)))
 
 (defmacro.ps+ get-piece-state (piece nav-mesh)
-  `(aref (get-entity-param ,piece :id)
-         (nav-mesh-2d-grid-state ,nav-mesh)))
+  `(aref (nav-mesh-2d-grid-state ,nav-mesh)
+         (get-entity-param ,piece :id)))
+
+(defun.ps+ get-nav-mesh-piece-state (x y nav-mesh)
+  (aref (nav-mesh-2d-grid-state nav-mesh)
+        (calc-piece-id x y nav-mesh)))
 
 (defun.ps+ enable-piece (piece nav-mesh)
   (setf (get-piece-state piece nav-mesh) t)

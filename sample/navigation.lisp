@@ -3,6 +3,8 @@
         :ps-experiment
         :cl-ps-ecs
         :cl-web-2d-game)
+  (:import-from :clw-sample-game-algorithm/sample/navigation/a-star-tester
+                :test-a-star)
   (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
                 :init-nav-mesh
                 :setf-nav-mesh-display-p
@@ -49,4 +51,5 @@
   (init-mouse-entity))
 
 (defun.ps+ update-func ()
-  (update-nav-mesh *nav-mesh*))
+  (update-nav-mesh *nav-mesh*)
+  (test-a-star *nav-mesh*))
