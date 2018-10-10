@@ -10,7 +10,8 @@
            :do-nav-mesh-grid
            :get-nav-mesh-piece-state
            :nav-mesh-2d-num-x
-           :nav-mesh-2d-num-y))
+           :nav-mesh-2d-num-y
+           :get-nav-mesh-piece-point))
 (in-package :clw-sample-game-algorithm/sample/navigation/nav-mesh)
 
 (defstruct.ps+ nav-mesh-2d
@@ -87,6 +88,19 @@
 (defun.ps+ get-nav-mesh-piece-state (x y nav-mesh)
   (aref (nav-mesh-2d-grid-state nav-mesh)
         (calc-piece-id x y nav-mesh)))
+
+(defun.ps+ get-nav-mesh-piece-point (x y nav-mesh)
+  "Get center point of the specifed piece"
+  (unless (and (<= 0 x (1- (nav-mesh-2d-num-x nav-mesh)))
+               (<= 0 y (1- (nav-mesh-2d-num-y nav-mesh))))
+    (error "Invalid (x, y) index"))
+  (with-slots ((offset-x x) (offset-y x) width height)
+      (nav-mesh-2d-rect nav-mesh)
+    (make-point-2d
+     :x (+ offset-x (* (+ 1/2 x)
+                       (/ width 1.0 (nav-mesh-2d-num-x nav-mesh))))
+     :y (+ offset-y (* (+ 1/2 y)
+                       (/ height 1.0 (nav-mesh-2d-num-y nav-mesh)))))))
 
 (defun.ps+ enable-piece (piece nav-mesh)
   (setf (get-piece-state piece nav-mesh) t)
