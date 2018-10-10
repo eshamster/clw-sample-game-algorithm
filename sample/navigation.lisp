@@ -4,6 +4,7 @@
         :cl-ps-ecs
         :cl-web-2d-game)
   (:import-from :clw-sample-game-algorithm/sample/navigation/a-star-tester
+                :init-test-a-star
                 :test-a-star)
   (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
                 :init-nav-mesh
@@ -29,7 +30,8 @@
                                (with-slots (x y) point-2d
                                  (setf x (get-mouse-x)
                                        y (get-mouse-y)))))))
-    (add-ecs-entity mouse)))
+    (add-ecs-entity mouse))
+  (init-test-a-star))
 
 (defun.ps+ init-my-gui ()
   (init-gui)

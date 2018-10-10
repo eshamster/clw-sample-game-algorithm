@@ -7,14 +7,22 @@
                 :search-path)
   (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
                 :get-nav-mesh-piece-point)
-  (:export :test-a-star))
+  (:export :test-a-star
+           :init-test-a-star))
 (in-package :clw-sample-game-algorithm/sample/navigation/a-star-tester)
+
+(defvar.ps+ *enable-slant-path-p* t)
+
+(defun.ps+ init-test-a-star ()
+  (add-panel-bool "Enable slant path" *enable-slant-path-p*
+                  :on-change (lambda (value)
+                               (setf *enable-slant-path-p* value))))
 
 (defun.ps+ test-a-star (nav-mesh)
   (let ((path (search-path :nav-mesh nav-mesh
                             :start-x 1 :start-y 2
                             :goal-x 10 :goal-y 10
-                            :enable-slant-p t)))
+                            :enable-slant-p *enable-slant-path-p*)))
     (register-next-frame-func
      (lambda ()
        (let ((pre-line (find-a-entity-by-tag :path-line)))
