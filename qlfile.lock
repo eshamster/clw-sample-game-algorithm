@@ -1,25 +1,25 @@
 ("quicklisp" .
  (:class qlot.source.ql:source-ql-all
-  :initargs (:project-name "quicklisp" :%version :latest)
-  :version "2018-08-31"))
+  :initargs (:distribution "http://beta.quicklisp.org/dist/quicklisp.txt" :%version :latest)
+  :version "2018-10-18"))
 ("ps-experiment" .
  (:class qlot.source.github:source-github
   :initargs (:project-name "ps-experiment" :repos "eshamster/ps-experiment" :ref nil :branch nil :tag nil)
-  :version "github-e4a383ae7fa07a22e561acb1ef9cf0a320a929ad"
+  :version "github-14168ecd99c9dc4193de003efb9d85f6d40b1c1d"
   :repos "eshamster/ps-experiment"
-  :url "https://github.com/eshamster/ps-experiment/archive/e4a383ae7fa07a22e561acb1ef9cf0a320a929ad.tar.gz"
-  :ref "e4a383ae7fa07a22e561acb1ef9cf0a320a929ad"))
+  :url "https://github.com/eshamster/ps-experiment/archive/14168ecd99c9dc4193de003efb9d85f6d40b1c1d.tar.gz"
+  :ref "14168ecd99c9dc4193de003efb9d85f6d40b1c1d"))
 ("cl-ps-ecs" .
  (:class qlot.source.github:source-github
   :initargs (:project-name "cl-ps-ecs" :repos "eshamster/cl-ps-ecs" :ref nil :branch nil :tag nil)
-  :version "github-3f5b06f3886d41e5b8ef542e68f46ff2c2ed7dcc"
+  :version "github-f85bcb675e4b76d235c2f76cf6d57e6e62d0901a"
   :repos "eshamster/cl-ps-ecs"
-  :url "https://github.com/eshamster/cl-ps-ecs/archive/3f5b06f3886d41e5b8ef542e68f46ff2c2ed7dcc.tar.gz"
-  :ref "3f5b06f3886d41e5b8ef542e68f46ff2c2ed7dcc"))
+  :url "https://github.com/eshamster/cl-ps-ecs/archive/f85bcb675e4b76d235c2f76cf6d57e6e62d0901a.tar.gz"
+  :ref "f85bcb675e4b76d235c2f76cf6d57e6e62d0901a"))
 ("cl-web-2d-game" .
  (:class qlot.source.github:source-github
   :initargs (:project-name "cl-web-2d-game" :repos "eshamster/cl-web-2d-game" :ref nil :branch nil :tag nil)
-  :version "github-4882e3009361e3b46303fe7c79e93d379575b4e3"
+  :version "github-a76d8b70078ca0d1fee06579c2e5a415721ec9cf"
   :repos "eshamster/cl-web-2d-game"
-  :url "https://github.com/eshamster/cl-web-2d-game/archive/4882e3009361e3b46303fe7c79e93d379575b4e3.tar.gz"
-  :ref "4882e3009361e3b46303fe7c79e93d379575b4e3"))
+  :url "https://github.com/eshamster/cl-web-2d-game/archive/a76d8b70078ca0d1fee06579c2e5a415721ec9cf.tar.gz"
+  :ref "a76d8b70078ca0d1fee06579c2e5a415721ec9cf"))
