@@ -45,5 +45,6 @@
                :rove
                :alexandria
                :cl-js
-               "clw-sample-game-algorithm/t/main")
+               "ps-experiment/t/test-utils"
+               "clw-sample-game-algorithm/t/sat/axis")
   :perform (test-op (o c) (symbol-call :rove '#:run c)))
