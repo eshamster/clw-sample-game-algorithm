@@ -20,7 +20,7 @@
 (in-package :clw-sample-game-algorithm/sample/SAT/visualizer)
 
 (defstruct.ps+ (visualizer (:include ecs-component))
-    fn-get-axis
+    fn-get-axis-list
   fn-get-target-point-lists)
 
 (defstruct.ps+
@@ -32,24 +32,22 @@
 (defvar.ps+ *color-list* (list #xff0000 #x00ffff))
 
 (defun.ps+ update-visualizer (entity)
-  (with-ecs-components (visualizer point-2d)
+  (with-ecs-components (visualizer)
       entity
-    (let ((axis (funcall (visualizer-fn-get-axis visualizer)))
+    (let ((axis-list (funcall (visualizer-fn-get-axis-list visualizer)))
           (target-point-lists
            (funcall (visualizer-fn-get-target-point-lists visualizer))))
       (delete-ecs-component-type 'model-2d entity)
-      (let ((count 0))
-        (dolist (point-list target-point-lists)
-          (let* ((proj (project-polygon-to-axis point-list axis))
-                 (new-proj-model (make-projection-line-model
-                                  proj
-                                  (nth (mod count (length *color-list*))
-                                       *color-list*))))
-            (add-ecs-component new-proj-model entity)
-            (incf count))))
-      (copy-vector-2d-to
-       point-2d
-       (axis-sat-base-point axis)))))
+      (dolist (axis axis-list)
+        (let ((count 0))
+          (dolist (point-list target-point-lists)
+            (let* ((proj (project-polygon-to-axis point-list axis))
+                   (new-proj-model (make-projection-line-model
+                                    proj
+                                    (nth (mod count (length *color-list*))
+                                         *color-list*))))
+              (add-ecs-component new-proj-model entity)
+              (incf count))))))))
 
 (defun.ps+ init-visualize-system ()
   (register-ecs-system "visualizer" (make-visualize-system))
@@ -60,17 +58,20 @@
   (let ((vis (make-ecs-entity)))
     (add-ecs-component-list
      vis
-     (make-point-2d)
+     (make-point-2d :x 50 :y 50)
      (make-visualizer
-      :fn-get-axis #'get-axis
+      :fn-get-axis-list #'get-axis-list
       :fn-get-target-point-lists #'get-target-point-lists)
      (init-entity-params))
     (add-ecs-entity vis)))
 
 ;; DEBUG
-(defun.ps+ get-axis ()
-  (init-axis-sat (make-point-2d :x 50 :y 50)
-                 (make-point-2d :x 1 :y 0)))
+(defun.ps+ get-axis-list ()
+  (list
+   (init-axis-sat (make-point-2d :x 50 :y 50)
+                  (make-point-2d :x 1 :y 0))
+   (init-axis-sat (make-point-2d :x 50 :y 50)
+                  (make-point-2d :x 0 :y 1))))
 
 (defun.ps+ get-target-point-lists ()
   (let ((result (list)))
