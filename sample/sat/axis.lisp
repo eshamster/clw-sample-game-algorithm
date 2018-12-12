@@ -7,8 +7,11 @@
   (:export :project-polygon-to-axis
            :get-intersected-projection-length
            :init-axis-sat
+           :axis-sat-base-point
+           :axis-sat-unit-vector
 
            :projection-sat
+           :projection-sat-axis
            :projection-sat-max
            :projection-sat-min)
   (:import-from :ps-experiment/common-macros

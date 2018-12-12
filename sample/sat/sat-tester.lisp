@@ -38,6 +38,7 @@
 (defun.ps+ make-sat-entity (&key point-list point)
   (check-type point point-2d)
   (let ((result (make-ecs-entity)))
+    (add-entity-tag result :sat-object)
     (add-ecs-component-list
      result
      point

@@ -3,6 +3,8 @@
         :ps-experiment
         :cl-ps-ecs
         :cl-web-2d-game)
+  (:import-from :clw-sample-game-algorithm/sample/SAT/visualizer
+                :init-visualize-system)
   (:import-from :clw-sample-game-algorithm/sample/SAT/sat-system
                 :init-sat-system)
   (:import-from :clw-sample-game-algorithm/sample/SAT/sat-tester
@@ -15,6 +17,7 @@
   (init-default-systems :scene scene)
   (init-input)
   (init-sat-system)
+  (init-visualize-system)
   (init-sat-tester))
 
 (defun.ps+ update-func ()
