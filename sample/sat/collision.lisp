@@ -4,6 +4,8 @@
         :cl-ps-ecs
         :cl-web-2d-game)
   (:export :init-sat-object
+           :sat-object-point-list
+           :sat-object-axis-list
            :collide-sat-object-p)
   (:import-from :clw-sample-game-algorithm/sample/SAT/axis
                 :get-intersected-projection-length

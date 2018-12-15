@@ -14,9 +14,15 @@
                 :projection-sat-min
                 :projection-sat-max
                 :project-polygon-to-axis)
+  (:import-from :clw-sample-game-algorithm/sample/SAT/collision
+                :init-sat-object
+                :sat-object-axis-list
+                :sat-object-point-list)
   (:import-from :clw-sample-game-algorithm/sample/SAT/sat-system
                 :sat-component
-                :sat-component-point-list))
+                :sat-component-point-list)
+  (:import-from :ps-experiment/common-macros
+                :setf-with))
 (in-package :clw-sample-game-algorithm/sample/SAT/visualizer)
 
 (defstruct.ps+ (visualizer (:include ecs-component))
@@ -36,7 +42,8 @@
       entity
     (let ((axis-list (funcall (visualizer-fn-get-axis-list visualizer)))
           (target-point-lists
-           (funcall (visualizer-fn-get-target-point-lists visualizer))))
+           (funcall (visualizer-fn-get-target-point-lists visualizer)))
+          (color-list *color-list*))
       (delete-ecs-component-type 'model-2d entity)
       (dolist (axis axis-list)
         (let ((count 0))
@@ -44,8 +51,8 @@
             (let* ((proj (project-polygon-to-axis point-list axis))
                    (new-proj-model (make-projection-line-model
                                     proj
-                                    (nth (mod count (length *color-list*))
-                                         *color-list*))))
+                                    (nth (mod count (length color-list))
+                                         color-list))))
               (add-ecs-component new-proj-model entity)
               (incf count))))))))
 
@@ -58,20 +65,26 @@
   (let ((vis (make-ecs-entity)))
     (add-ecs-component-list
      vis
-     (make-point-2d :x 50 :y 50)
+     (make-point-2d)
      (make-visualizer
       :fn-get-axis-list #'get-axis-list
       :fn-get-target-point-lists #'get-target-point-lists)
      (init-entity-params))
     (add-ecs-entity vis)))
 
+(defun.ps+ adjustf-axis-base-point (axis)
+  (setf-with (axis-sat-base-point axis)
+    x 300
+    y 250))
+
 ;; DEBUG
 (defun.ps+ get-axis-list ()
-  (list
-   (init-axis-sat (make-point-2d :x 50 :y 50)
-                  (make-point-2d :x 1 :y 0))
-   (init-axis-sat (make-point-2d :x 50 :y 50)
-                  (make-point-2d :x 0 :y 1))))
+  (let* ((entity (find-a-entity-by-tag :sat-object))
+         (result (sat-object-axis-list
+                  (init-sat-object (calc-global-point-list entity)))))
+    (dolist (axis result)
+      (adjustf-axis-base-point axis))
+    result))
 
 (defun.ps+ get-target-point-lists ()
   (let ((result (list)))
