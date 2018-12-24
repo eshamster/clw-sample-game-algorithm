@@ -6,6 +6,7 @@
   (:export :init-visualize-system
            :make-visualizer)
   (:import-from :clw-sample-game-algorithm/sample/SAT/axis
+                :get-intersected-projection
                 :init-axis-sat
                 :axis-sat-base-point
                 :axis-sat-unit-vector
@@ -36,25 +37,45 @@
                (process #'update-visualizer))))
 
 (defvar.ps+ *color-list* (list #xff0000 #x00ffff))
+(defvar.ps+ *intersected-color* #xffff00)
 
 (defun.ps+ update-visualizer (entity)
   (with-ecs-components (visualizer)
       entity
     (let ((axis-list (funcall (visualizer-fn-get-axis-list visualizer)))
           (target-point-lists
-           (funcall (visualizer-fn-get-target-point-lists visualizer)))
-          (color-list *color-list*))
+           (funcall (visualizer-fn-get-target-point-lists visualizer))))
       (delete-ecs-component-type 'model-2d entity)
       (dolist (axis axis-list)
-        (let ((count 0))
-          (dolist (point-list target-point-lists)
-            (let* ((proj (project-polygon-to-axis point-list axis))
-                   (new-proj-model (make-projection-line-model
-                                    proj
-                                    (nth (mod count (length color-list))
-                                         color-list))))
-              (add-ecs-component new-proj-model entity)
-              (incf count))))))))
+        (add-projection-models axis target-point-lists entity)))))
+
+(defun.ps+ add-projection-models (axis point-lists entity)
+  "For specified axis"
+  (let ((proj-list (mapcar (lambda (point-list)
+                             (project-polygon-to-axis point-list axis))
+                           point-lists))
+        (color-list *color-list*)
+        (count 0))
+    ;; lines for each point-list
+    (dolist (proj proj-list)
+      (let ((proj-model (make-projection-line-model
+                         proj
+                         (nth (mod count (length color-list))
+                              color-list))))
+        (add-ecs-component proj-model entity)
+        (incf count)))
+    ;; intersected line
+    ;; XXX: only for 2 point-lists
+    (let ((proj1 (nth 0 proj-list))
+          (proj2 (nth 1 proj-list)))
+      (when (and proj1 proj2)
+        (let ((intersected-proj (get-intersected-projection proj1 proj2)))
+          (when intersected-proj
+            (let ((proj-model (make-projection-line-model
+                               intersected-proj
+                               *intersected-color*
+                               :depth 1000)))
+              (add-ecs-component proj-model entity))))))))
 
 (defun.ps+ init-visualize-system ()
   (register-ecs-system "visualizer" (make-visualize-system))
@@ -128,7 +149,7 @@
 (defun.ps+ extract-point-list (entity)
   (sat-component-point-list (get-ecs-component 'sat-component entity)))
 
-(defun.ps+ make-projection-line-model (proj color)
+(defun.ps+ make-projection-line-model (proj color &key (depth 100))
   (check-type proj projection-sat)
   (with-slots (axis min max) proj
     (flet ((make-a-point (len)
@@ -136,7 +157,7 @@
                (list (+ (vector-2d-x base-point) (* (vector-2d-x unit-vector) len))
                      (+ (vector-2d-y base-point) (* (vector-2d-y unit-vector) len))))))
       (make-model-2d 
-       :depth 100
+       :depth depth
        :model (make-line :pos-a (make-a-point min)
                          :pos-b (make-a-point max)
                          :color color)))))
