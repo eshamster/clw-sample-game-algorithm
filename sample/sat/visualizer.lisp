@@ -60,7 +60,6 @@
   (register-ecs-system "visualizer" (make-visualize-system))
   (add-sample-visualizer))
 
-;; DEBUG
 (defun.ps+ add-sample-visualizer ()
   (let ((vis (make-ecs-entity)))
     (add-ecs-component-list
@@ -73,11 +72,36 @@
     (add-ecs-entity vis)))
 
 (defun.ps+ adjustf-axis-base-point (axis)
-  (setf-with (axis-sat-base-point axis)
-    x 300
-    y 250))
+  "Set axis as a tangent line of a oval"
+  (let* ((axis-unit-vector (axis-sat-unit-vector axis))
+         (axis-x (vector-2d-x axis-unit-vector))
+         (axis-y (vector-2d-y axis-unit-vector))
+         (oval-len-x (* 0.4 (get-screen-width))) ;; half length
+         (oval-len-y (* 0.4 (get-screen-height))))
+    (flet ((set-result (x-result y-result)
+             (setf-with (axis-sat-base-point axis)
+               x (+ (* 1/2 (get-screen-width))
+                    (* (abs x-result)
+                       (if (> axis-y 0) 1 -1)))
+               y (+ (* 1/2 (get-screen-height))
+                    (* (abs y-result)
+                       (if (> axis-x 0) -1 1))))))
+      (cond ((= axis-x 0) (set-result oval-len-x 0))
+            ((= axis-y 0) (set-result 0 oval-len-y))
+            (t (let* ((slope (/ axis-y axis-x))
+                      (;; s a^2 / (s^2 a^2 + b^2)^1/2
+                       x (/ (* slope (expt oval-len-x 2))
+                            (expt (+ (* (expt slope 2)
+                                        (expt oval-len-x 2))
+                                     (expt oval-len-y 2))
+                                  1/2)))
+                      (;; b (1 - x^2/a^2)^1/2
+                       y (* oval-len-y
+                            (expt (- 1 (/ (expt x 2)
+                                          (expt oval-len-x 2)))
+                                  1/2))))
+                 (set-result x y)))))))
 
-;; DEBUG
 (defun.ps+ get-axis-list ()
   (let* ((entity (find-a-entity-by-tag :sat-object))
          (result (sat-object-axis-list
