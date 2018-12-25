@@ -3,8 +3,7 @@
         :ps-experiment
         :cl-ps-ecs
         :cl-web-2d-game)
-  (:export :init-visualize-system
-           :make-visualizer)
+  (:export :init-visualizer)
   (:import-from :clw-sample-game-algorithm/sample/SAT/axis
                 :get-intersected-projection
                 :init-axis-sat
@@ -30,12 +29,6 @@
 (defstruct.ps+ (visualizer (:include ecs-component))
     fn-get-axis-list
   fn-get-target-point-lists)
-
-(defstruct.ps+
-    (visualize-system
-     (:include ecs-system
-               (target-component-types '(visualizer point-2d))
-               (process #'update-visualizer))))
 
 (defvar.ps+ *color-list* (list #xff0000 #x00ffff))
 (defvar.ps+ *intersected-color* #xffff00)
@@ -78,11 +71,7 @@
                                :depth 1000)))
               (add-ecs-component proj-model entity))))))))
 
-(defun.ps+ init-visualize-system ()
-  (register-ecs-system "visualizer" (make-visualize-system))
-  (add-sample-visualizer))
-
-(defun.ps+ add-sample-visualizer ()
+(defun.ps+ init-visualizer ()
   (let ((vis (make-ecs-entity)))
     (add-ecs-component-list
      vis
@@ -90,6 +79,7 @@
      (make-visualizer
       :fn-get-axis-list #'get-axis-list
       :fn-get-target-point-lists #'get-target-point-lists)
+     (make-script-2d :func #'update-visualizer)
      (init-entity-params))
     (add-ecs-entity vis)))
 
