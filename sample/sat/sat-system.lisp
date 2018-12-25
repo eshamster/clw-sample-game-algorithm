@@ -6,7 +6,8 @@
   (:export :make-sat-component
            :sat-component
            :sat-component-point-list
-           :init-sat-system)
+           :init-sat-system
+           :extract-point-list)
   (:import-from :clw-sample-game-algorithm/sample/SAT/collision
                 :init-sat-object
                 :collide-sat-object-p)
@@ -51,4 +52,6 @@
     (init-sat-object global-point-list)))
 
 (defun.ps+ extract-point-list (entity)
-  (sat-component-point-list (get-ecs-component 'sat-component entity)))
+  (let ((result (sat-component-point-list (get-ecs-component 'sat-component entity))))
+    (assert result)
+    result))

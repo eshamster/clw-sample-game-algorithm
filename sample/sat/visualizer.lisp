@@ -21,7 +21,8 @@
                 :sat-object-point-list)
   (:import-from :clw-sample-game-algorithm/sample/SAT/sat-system
                 :sat-component
-                :sat-component-point-list)
+                :sat-component-point-list
+                :extract-point-list)
   (:import-from :ps-experiment/common-macros
                 :setf-with))
 (in-package :clw-sample-game-algorithm/sample/SAT/visualizer)
@@ -144,10 +145,6 @@
       (push (transformf-point (clone-point-2d point) global-point)
             global-point-list))
     global-point-list))
-
-;; DEBUG: copied from sat-system.lisp
-(defun.ps+ extract-point-list (entity)
-  (sat-component-point-list (get-ecs-component 'sat-component entity)))
 
 (defun.ps+ make-projection-line-model (proj color &key (depth 100))
   (check-type proj projection-sat)
