@@ -5,10 +5,13 @@
         :cl-web-2d-game/core/basic-components
         :cl-web-2d-game/utils/calc)
   (:export :project-polygon-to-axis
-           :get-intersected-projection-length
+           :get-intersected-projection
            :init-axis-sat
+           :axis-sat-base-point
+           :axis-sat-unit-vector
 
            :projection-sat
+           :projection-sat-axis
            :projection-sat-max
            :projection-sat-min)
   (:import-from :ps-experiment/common-macros
@@ -47,11 +50,17 @@
             (setf max len)))))
     result))
 
-(defun.ps+ get-intersected-projection-length (proj1 proj2)
-  "The return value >= 0, they are intersected. Otherwise, they are not."
+(defun.ps+ get-intersected-projection (proj1 proj2)
+  "If the two projectios are intersected, returns a new intersected projection.
+Otherwise returns nil."
   (assert (eq (projection-sat-axis proj1)
               (projection-sat-axis proj2)))
   (with-slots-pair (((min1 min) (max1 max)) proj1
                     ((min2 min) (max2 max)) proj2)
-    (- (min max1 max2)
-       (max min1 min2))))
+    (when (>= (- (min max1 max2)
+                 (max min1 min2))
+              0)
+      (make-projection-sat :axis (projection-sat-axis proj1)
+                           :min (max min1 min2)
+                           :max (min max1 max2)))))
+

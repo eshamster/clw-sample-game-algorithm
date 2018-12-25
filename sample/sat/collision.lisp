@@ -4,9 +4,11 @@
         :cl-ps-ecs
         :cl-web-2d-game)
   (:export :init-sat-object
+           :sat-object-point-list
+           :sat-object-axis-list
            :collide-sat-object-p)
   (:import-from :clw-sample-game-algorithm/sample/SAT/axis
-                :get-intersected-projection-length
+                :get-intersected-projection
                 :init-axis-sat
                 :project-polygon-to-axis)
   (:import-from :ps-experiment/common-macros
@@ -39,10 +41,9 @@
 
 (defun.ps+ intersects-on-all-axis (point-list1 point-list2 axis-list)
   (every (lambda (axis)
-           (>= (get-intersected-projection-length
-                (project-polygon-to-axis point-list1 axis)
-                (project-polygon-to-axis point-list2 axis))
-               0))
+           (get-intersected-projection
+            (project-polygon-to-axis point-list1 axis)
+            (project-polygon-to-axis point-list2 axis)))
          axis-list))
 
 (defun.ps+ collide-sat-object-p (obj1 obj2)
