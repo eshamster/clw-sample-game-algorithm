@@ -26,22 +26,15 @@
                 :setf-with))
 (in-package :clw-sample-game-algorithm/sample/SAT/visualizer)
 
-(defstruct.ps+ (visualizer (:include ecs-component))
-    fn-get-axis-list
-  fn-get-target-point-lists)
-
 (defvar.ps+ *color-list* (list #xff0000 #x00ffff))
 (defvar.ps+ *intersected-color* #xffff00)
 
 (defun.ps+ update-visualizer (entity)
-  (with-ecs-components (visualizer)
-      entity
-    (let ((axis-list (funcall (visualizer-fn-get-axis-list visualizer)))
-          (target-point-lists
-           (funcall (visualizer-fn-get-target-point-lists visualizer))))
-      (delete-ecs-component-type 'model-2d entity)
-      (dolist (axis axis-list)
-        (add-projection-models axis target-point-lists entity)))))
+  (let ((axis-list (get-axis-list))
+        (target-point-lists (get-target-point-lists)))
+    (delete-ecs-component-type 'model-2d entity)
+    (dolist (axis axis-list)
+      (add-projection-models axis target-point-lists entity))))
 
 (defun.ps+ add-projection-models (axis point-lists entity)
   "For specified axis"
@@ -76,9 +69,6 @@
     (add-ecs-component-list
      vis
      (make-point-2d)
-     (make-visualizer
-      :fn-get-axis-list #'get-axis-list
-      :fn-get-target-point-lists #'get-target-point-lists)
      (make-script-2d :func #'update-visualizer)
      (init-entity-params))
     (add-ecs-entity vis)))
