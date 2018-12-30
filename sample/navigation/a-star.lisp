@@ -6,14 +6,13 @@
   (:export :search-path)
   (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
                 :do-nav-mesh-grid
+                :get-nav-mesh-piece-point
                 :get-nav-mesh-piece-state
                 :nav-mesh-2d-num-x
                 :nav-mesh-2d-num-y)
   (:import-from :ps-experiment/common-macros
                 :with-slots-pair))
 (in-package :clw-sample-game-algorithm/sample/navigation/a-star)
-
-;; Note: "x" and "y" are represented as indexes in nav-mesh grid.
 
 ;; r: real, h: heuristic
 (defstruct.ps+ a-star-node
@@ -44,7 +43,7 @@
     result))
 
 (defun.ps+ search-path (&key nav-mesh start-x start-y goal-x goal-y (enable-slant-p t))
-  "Returns searched path as list like '((x1 y1) ... (xn yn)).
+  "Returns searched path as list of point-2d (start to goal order).
 If path is not found, returns nil."
   (let ((a-star (init-a-star :start-node (make-grid-mesh-node :x start-x :y start-y)
                              :goal-node (make-grid-mesh-node :x goal-x :y goal-y)
@@ -72,14 +71,13 @@ If path is not found, returns nil."
                               (rec parent result)
                               result))))
                (rec goal-node (list)))))
-    ;; TODO
-    (let ((goal-node (search-rec)))
-      (when goal-node
+    (let ((goal-as-node (search-rec)))
+      (when goal-as-node
         (mapcar (lambda (as-node)
-                  (let ((node (a-star-node-node as-node)))
-                    (list (grid-mesh-node-x node)
-                          (grid-mesh-node-y node))))
-                (extract-path goal-node))))))
+                  (convert-node-to-point
+                   (a-star-mesh a-star)
+                   (a-star-node-node as-node)))
+                (extract-path goal-as-node))))))
 
 (defun.ps+ goal-node-p (as-node a-star)
   (let ((mesh (a-star-mesh a-star)))
@@ -127,6 +125,7 @@ If path is not found, returns nil."
 ;; --- To generalize node --- ;;
 
 (defgeneric.ps+ calc-heuristic-cost (mesh node1 node2))
+(defgeneric.ps+ convert-node-to-point (mesh node))
 (defgeneric.ps+ get-around-node-list (mesh node))
 (defgeneric.ps+ get-node-id (mesh node))
 
@@ -143,6 +142,12 @@ If path is not found, returns nil."
              (abs (- y2 y1)))
         (+ (abs (- x2 x1))
            (abs (- y2 y1))))))
+
+(defmethod.ps+ convert-node-to-point ((mesh grid-mesh) (node grid-mesh-node))
+  (get-nav-mesh-piece-point
+   (grid-mesh-node-x node)
+   (grid-mesh-node-y node)
+   (grid-mesh-nav-mesh-2d mesh)))
 
 (defmethod.ps+ get-around-node-list ((mesh grid-mesh) (node grid-mesh-node))
   (let ((result (list)))

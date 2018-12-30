@@ -29,18 +29,16 @@
          (when pre-line
            (delete-ecs-entity pre-line)))
        (when path
-         (add-ecs-entity (make-line-entity path nav-mesh)))))))
+         (add-ecs-entity (make-line-entity path)))))))
 
-(defun.ps+ make-line-entity (path nav-mesh)
+(defun.ps+ make-line-entity (path)
   (let ((line (make-ecs-entity))
         (line-points (list)))
     (add-entity-tag line :path-line)
     (add-ecs-component-list line (make-point-2d))
-    (dolist (node path)
-      (let ((point (get-nav-mesh-piece-point
-                    (car node) (cadr node) nav-mesh)))
-        (push (list (point-2d-x point) (point-2d-y point))
-              line-points)))
+    (dolist (point path)
+      (push (list (point-2d-x point) (point-2d-y point))
+            line-points))
     (add-ecs-component-list
      line
      (make-model-2d :model (make-lines :pnt-list line-points
