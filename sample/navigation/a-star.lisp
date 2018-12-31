@@ -102,8 +102,11 @@ If path is not found, returns nil."
     (let ((as-node (make-a-star-node
                     :node node
                     :parent parent
-                    ;; TODO: Abstract cost between nodes
-                    :r-score (if parent (1+ (a-star-node-r-score parent)) 0)
+                    :r-score (if parent
+                                 (+ (a-star-node-r-score parent)
+                                    (calc-real-cost
+                                     mesh node (a-star-node-node parent)))
+                                 0)
                     :h-score (calc-heuristic-cost
                               mesh node goal-node))))
       (push as-node (a-star-opened-nodes a-star))
@@ -125,6 +128,7 @@ If path is not found, returns nil."
 ;; --- To generalize node --- ;;
 
 (defgeneric.ps+ calc-heuristic-cost (mesh node1 node2))
+(defgeneric.ps+ calc-real-cost (mesh node1 node2))
 (defgeneric.ps+ convert-node-to-point (mesh node))
 (defgeneric.ps+ get-around-node-list (mesh node))
 (defgeneric.ps+ get-node-id (mesh node))
@@ -142,6 +146,10 @@ If path is not found, returns nil."
              (abs (- y2 y1)))
         (+ (abs (- x2 x1))
            (abs (- y2 y1))))))
+
+(defmethod.ps+ calc-real-cost ((mesh grid-mesh)
+                               (node1 grid-mesh-node) (node2 grid-mesh-node))
+  1)
 
 (defmethod.ps+ convert-node-to-point ((mesh grid-mesh) (node grid-mesh-node))
   (get-nav-mesh-piece-point
