@@ -8,6 +8,7 @@
                 :test-a-star)
   (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
                 :init-nav-mesh
+                :destroy-nav-mesh
                 :setf-nav-mesh-display-p
                 :update-nav-mesh)
   (:import-from :clw-sample-game-algorithm/sample/navigation/obstacle
@@ -17,6 +18,8 @@
 (clw-sample-game-algorithm/utils:use-this-package-as-sample)
 
 (defvar.ps+ *nav-mesh* nil)
+(defvar.ps+ *grid-num-x* 20)
+(defvar.ps+ *grid-num-y* 15)
 
 (defun.ps+ init-mouse-entity ()
   (let ((mouse (make-ecs-entity)))
@@ -33,21 +36,41 @@
     (add-ecs-entity mouse))
   (init-test-a-star))
 
+(defun.ps+ reset-nav-mesh ()
+  (register-next-frame-func
+   (lambda ()
+     (when *nav-mesh*
+       (destroy-nav-mesh *nav-mesh*))
+     (setf *nav-mesh*
+           (init-nav-mesh :rect (make-rect-2d :x 0 :y 0
+                                              :width 800 :height 600)
+                          :num-x *grid-num-x*
+                          :num-y *grid-num-y*)))))
+
 (defun.ps+ init-my-gui ()
   (init-gui)
   (add-panel-bool "Dispaly Mesh" t
                   :on-change (lambda (value)
-                               (setf-nav-mesh-display-p *nav-mesh* value))))
+                               (setf-nav-mesh-display-p *nav-mesh* value)))
+  (let ((folder (add-panel-folder "Grid Density")))
+    (add-panel-number "X" *grid-num-x*
+                      :min 11 :max 30 :step 1
+                      :on-change (lambda (value)
+                                   (setf *grid-num-x* value)
+                                   (reset-nav-mesh))
+                      :folder folder)
+    (add-panel-number "Y" *grid-num-y*
+                      :min 11 :max 30 :step 1
+                      :on-change (lambda (value)
+                                   (setf *grid-num-y* value)
+                                   (reset-nav-mesh))
+                      :folder folder)))
 
 (defun.ps+ init-func (scene)
   (setf-collider-model-enable nil)
   (init-obstacle)
   (init-my-gui)
-  (setf *nav-mesh*
-        (init-nav-mesh :rect (make-rect-2d :x 0 :y 0
-                                           :width 800 :height 600)
-                       :num-x 20
-                       :num-y 15))
+  (reset-nav-mesh)
   (init-default-systems :scene scene)
   (init-input)
   (init-mouse-entity))
