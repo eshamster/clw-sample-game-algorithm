@@ -3,7 +3,7 @@
         :ps-experiment
         :cl-ps-ecs
         :cl-web-2d-game)
-  (:export :make-grid-mesh
+  (:export :init-grid-mesh
            :make-grid-mesh-node)
   (:import-from :clw-sample-game-algorithm/sample/navigation/node/interface
                 :calc-heuristic-cost
@@ -23,6 +23,12 @@
 
 (defstruct.ps+ grid-mesh num-x num-y enable-slant-p nav-mesh-2d)
 (defstruct.ps+ grid-mesh-node x y)
+
+(defun.ps+ init-grid-mesh (&key nav-mesh-2d enable-slant-p)
+  (make-grid-mesh :enable-slant-p enable-slant-p
+                  :num-x (nav-mesh-2d-num-x nav-mesh-2d)
+                  :num-y (nav-mesh-2d-num-y nav-mesh-2d)
+                  :nav-mesh-2d nav-mesh-2d))
 
 (defmethod.ps+ calc-heuristic-cost ((mesh grid-mesh)
                                     (node1 grid-mesh-node) (node2 grid-mesh-node))

@@ -10,7 +10,7 @@
                 :nav-mesh-2d-num-x
                 :nav-mesh-2d-num-y)
   (:import-from :clw-sample-game-algorithm/sample/navigation/node/grid-node
-                :make-grid-mesh
+                :init-grid-mesh
                 :make-grid-mesh-node)
   (:export :test-a-star
            :init-test-a-star))
@@ -24,9 +24,7 @@
                                (setf *enable-slant-path-p* value))))
 
 (defun.ps+ test-a-star (nav-mesh)
-  (let ((path (search-path :mesh (make-grid-mesh :enable-slant-p *enable-slant-path-p*
-                                                 :num-x (nav-mesh-2d-num-x nav-mesh)
-                                                 :num-y (nav-mesh-2d-num-y nav-mesh)
+  (let ((path (search-path :mesh (init-grid-mesh :enable-slant-p *enable-slant-path-p*
                                                  :nav-mesh-2d nav-mesh)
                            :start-node (make-grid-mesh-node :x 1 :y 2)
                            :goal-node (make-grid-mesh-node :x 10 :y 10))))
