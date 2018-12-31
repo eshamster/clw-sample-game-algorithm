@@ -27,23 +27,22 @@
 
 (defstruct.ps+ a-star
     (opening-nodes (list))
+  (visited-nodes (make-hash-table))
   mesh
-  goal-node
-  grid-state)
+  goal-node)
 
-(defun.ps+ get-a-star-grid-state (node a-star)
-  (gethash (get-node-id (a-star-mesh a-star) node)
-           (a-star-grid-state a-star)))
-
-(defun.ps+ setf-a-star-grid-state (node state a-star)
+(defun.ps+ register-node-as-visited (node a-star)
   (setf (gethash (get-node-id (a-star-mesh a-star) node)
-                 (a-star-grid-state a-star))
-        state))
+                 (a-star-visited-nodes a-star))
+        t))
+
+(defun.ps+ visited-node-p (node a-star)
+  (gethash (get-node-id (a-star-mesh a-star) node)
+           (a-star-visited-nodes a-star)))
 
 (defun.ps+ init-a-star (&key start-node goal-node mesh)
   (let ((result
          (make-a-star :goal-node goal-node
-                      :grid-state (make-hash-table)
                       :mesh mesh)))
     (open-a-node start-node nil result)
     result))
@@ -96,11 +95,10 @@ If path is not found, returns nil."
 
 (defun.ps+ open-around-nodes (as-node-parent a-star)
   (with-slots (node) as-node-parent
-    (setf-a-star-grid-state node :closed a-star)
     (with-slots (opening-nodes) a-star
       (setf opening-nodes (remove as-node-parent opening-nodes)))
     (dolist (around-node (get-around-node-list (a-star-mesh a-star) node))
-      (unless (get-a-star-grid-state around-node a-star)
+      (unless (visited-node-p around-node a-star)
         (open-a-node around-node as-node-parent a-star)))))
 
 (defun.ps+ open-a-node (node parent a-star)
@@ -116,7 +114,7 @@ If path is not found, returns nil."
                     :h-score (calc-heuristic-cost
                               mesh node goal-node))))
       (push as-node (a-star-opening-nodes a-star))
-      (setf-a-star-grid-state node :opened a-star))))
+      (register-node-as-visited node a-star))))
 
 (defun.ps+ select-next-node (a-star)
   (let (result min-score)
