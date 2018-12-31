@@ -26,7 +26,7 @@
     r-score h-score)
 
 (defstruct.ps+ a-star
-    (opened-nodes (list))
+    (opening-nodes (list))
   mesh
   goal-node
   grid-state)
@@ -97,8 +97,8 @@ If path is not found, returns nil."
 (defun.ps+ open-around-nodes (as-node-parent a-star)
   (with-slots (node) as-node-parent
     (setf-a-star-grid-state node :closed a-star)
-    (with-slots (opened-nodes) a-star
-      (setf opened-nodes (remove as-node-parent opened-nodes)))
+    (with-slots (opening-nodes) a-star
+      (setf opening-nodes (remove as-node-parent opening-nodes)))
     (dolist (around-node (get-around-node-list (a-star-mesh a-star) node))
       (unless (get-a-star-grid-state around-node a-star)
         (open-a-node around-node as-node-parent a-star)))))
@@ -115,12 +115,12 @@ If path is not found, returns nil."
                                  0)
                     :h-score (calc-heuristic-cost
                               mesh node goal-node))))
-      (push as-node (a-star-opened-nodes a-star))
+      (push as-node (a-star-opening-nodes a-star))
       (setf-a-star-grid-state node :opened a-star))))
 
 (defun.ps+ select-next-node (a-star)
   (let (result min-score)
-    (dolist (node (a-star-opened-nodes a-star))
+    (dolist (node (a-star-opening-nodes a-star))
       (when (goal-node-p node a-star)
         (return-from select-next-node node))
       (let ((score (calc-score node)))
