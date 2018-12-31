@@ -5,11 +5,17 @@
         :cl-web-2d-game)
   (:export :search-path)
   (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
-                :do-nav-mesh-grid
-                :get-nav-mesh-piece-point
-                :get-nav-mesh-piece-state
                 :nav-mesh-2d-num-x
                 :nav-mesh-2d-num-y)
+  (:import-from :clw-sample-game-algorithm/sample/navigation/node/grid-node
+                :make-grid-mesh
+                :make-grid-mesh-node)
+  (:import-from :clw-sample-game-algorithm/sample/navigation/node/interface
+                :calc-heuristic-cost
+                :calc-real-cost
+                :convert-node-to-point
+                :get-around-node-list
+                :get-node-id)
   (:import-from :ps-experiment/common-macros
                 :with-slots-pair))
 (in-package :clw-sample-game-algorithm/sample/navigation/a-star)
@@ -123,63 +129,3 @@ If path is not found, returns nil."
           (setf result node
                 min-score score))))
     result))
-
-;; TODO: move to another package
-;; --- To generalize node --- ;;
-
-(defgeneric.ps+ calc-heuristic-cost (mesh node1 node2))
-(defgeneric.ps+ calc-real-cost (mesh node1 node2))
-(defgeneric.ps+ convert-node-to-point (mesh node))
-(defgeneric.ps+ get-around-node-list (mesh node))
-(defgeneric.ps+ get-node-id (mesh node))
-
-(defstruct.ps+ grid-mesh num-x num-y enable-slant-p nav-mesh-2d)
-(defstruct.ps+ grid-mesh-node x y)
-
-(defmethod.ps+ calc-heuristic-cost ((mesh grid-mesh)
-                                    (node1 grid-mesh-node) (node2 grid-mesh-node))
-  (with-slots-pair ((enable-slant-p) mesh
-                    ((x1 x) (y1 y)) node1
-                    ((x2 x) (y2 y)) node2)
-    (if enable-slant-p
-        (max (abs (- x2 x1))
-             (abs (- y2 y1)))
-        (+ (abs (- x2 x1))
-           (abs (- y2 y1))))))
-
-(defmethod.ps+ calc-real-cost ((mesh grid-mesh)
-                               (node1 grid-mesh-node) (node2 grid-mesh-node))
-  1)
-
-(defmethod.ps+ convert-node-to-point ((mesh grid-mesh) (node grid-mesh-node))
-  (get-nav-mesh-piece-point
-   (grid-mesh-node-x node)
-   (grid-mesh-node-y node)
-   (grid-mesh-nav-mesh-2d mesh)))
-
-(defmethod.ps+ get-around-node-list ((mesh grid-mesh) (node grid-mesh-node))
-  (let ((result (list)))
-    (with-slots-pair ((num-x num-y nav-mesh-2d) mesh
-                      ((base-x x) (base-y y)) node)
-      (labels ((valid-point-p (x y)
-                 (and (<= 0 x (1- num-x))
-                      (<= 0 y (1- num-y))))
-               (push-if-required (x y)
-                 (let ((new-node (make-grid-mesh-node :x x :y y)))
-                   (when (and (valid-point-p x y)
-                              (get-nav-mesh-piece-state x y nav-mesh-2d))
-                     (push new-node result)))))
-        (push-if-required (1- base-x) base-y)
-        (push-if-required (1+ base-x) base-y)
-        (push-if-required base-x (1- base-y))
-        (push-if-required base-x (1+ base-y))
-        (when (grid-mesh-enable-slant-p mesh)
-          (push-if-required (1- base-x) (1- base-y))
-          (push-if-required (1+ base-x) (1- base-y))
-          (push-if-required (1+ base-x) (1+ base-y))
-          (push-if-required (1- base-x) (1+ base-y)))))
-    result))
-
-(defmethod.ps+ get-node-id ((mesh grid-mesh) (node grid-mesh-node))
-  (with-slots (x y) node
-    (+ x (* y (grid-mesh-num-x mesh)))))
