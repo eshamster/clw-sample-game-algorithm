@@ -4,6 +4,7 @@
         :cl-ps-ecs
         :cl-web-2d-game)
   (:export :init-nav-mesh
+           :destroy-nav-mesh
            :setf-nav-mesh-display-p
            :update-nav-mesh
 
@@ -26,6 +27,11 @@
                  :grid-state (make-array (* num-x num-y) :initial-element t))))
     (init-grid-entity result)
     result))
+
+(defun.ps+ destroy-nav-mesh (mesh)
+  (declare (ignore mesh))
+  (do-tagged-ecs-entities (grid :nav-mesh-grid)
+    (delete-ecs-entity grid)))
 
 (defmacro.ps+ do-nav-mesh-grid (((var-x var-y) nav-mesh) &body body)
   `(dotimes (,var-y (nav-mesh-2d-num-y ,nav-mesh))
