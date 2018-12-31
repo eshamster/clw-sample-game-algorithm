@@ -6,7 +6,12 @@
   (:import-from :clw-sample-game-algorithm/sample/navigation/a-star
                 :search-path)
   (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
-                :get-nav-mesh-piece-point)
+                :get-nav-mesh-piece-point
+                :nav-mesh-2d-num-x
+                :nav-mesh-2d-num-y)
+  (:import-from :clw-sample-game-algorithm/sample/navigation/node/grid-node
+                :init-grid-mesh
+                :make-grid-mesh-node)
   (:export :test-a-star
            :init-test-a-star))
 (in-package :clw-sample-game-algorithm/sample/navigation/a-star-tester)
@@ -19,10 +24,10 @@
                                (setf *enable-slant-path-p* value))))
 
 (defun.ps+ test-a-star (nav-mesh)
-  (let ((path (search-path :nav-mesh nav-mesh
-                            :start-x 1 :start-y 2
-                            :goal-x 10 :goal-y 10
-                            :enable-slant-p *enable-slant-path-p*)))
+  (let ((path (search-path :mesh (init-grid-mesh :enable-slant-p *enable-slant-path-p*
+                                                 :nav-mesh-2d nav-mesh)
+                           :start-node (make-grid-mesh-node :x 1 :y 2)
+                           :goal-node (make-grid-mesh-node :x 10 :y 10))))
     (register-next-frame-func
      (lambda ()
        (let ((pre-line (find-a-entity-by-tag :path-line)))

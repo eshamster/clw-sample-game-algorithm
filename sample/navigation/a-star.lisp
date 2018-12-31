@@ -4,12 +4,6 @@
         :cl-ps-ecs
         :cl-web-2d-game)
   (:export :search-path)
-  (:import-from :clw-sample-game-algorithm/sample/navigation/nav-mesh
-                :nav-mesh-2d-num-x
-                :nav-mesh-2d-num-y)
-  (:import-from :clw-sample-game-algorithm/sample/navigation/node/grid-node
-                :make-grid-mesh
-                :make-grid-mesh-node)
   (:import-from :clw-sample-game-algorithm/sample/navigation/node/interface
                 :calc-heuristic-cost
                 :calc-real-cost
@@ -47,15 +41,12 @@
     (open-a-node start-node nil result)
     result))
 
-(defun.ps+ search-path (&key nav-mesh start-x start-y goal-x goal-y (enable-slant-p t))
+(defun.ps+ search-path (&key mesh start-node goal-node)
   "Returns searched path as list of point-2d (start to goal order).
 If path is not found, returns nil."
-  (let ((a-star (init-a-star :start-node (make-grid-mesh-node :x start-x :y start-y)
-                             :goal-node (make-grid-mesh-node :x goal-x :y goal-y)
-                             :mesh (make-grid-mesh :enable-slant-p enable-slant-p
-                                                   :num-x (nav-mesh-2d-num-x nav-mesh)
-                                                   :num-y (nav-mesh-2d-num-y nav-mesh)
-                                                   :nav-mesh-2d nav-mesh))))
+  (let ((a-star (init-a-star :start-node start-node
+                             :goal-node goal-node
+                             :mesh mesh)))
     (search-path-by-a-star a-star)))
 
 (defun.ps+ search-path-by-a-star (a-star)
