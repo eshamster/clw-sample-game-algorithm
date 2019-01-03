@@ -25,21 +25,24 @@
 (defun.ps+ add-or-replace-spline (curve-entity fn-calc-point &key color name)
   (check-entity-tags curve-entity :curve)
   (let ((curve-points (list)) ; ((x1 y1) (x2 y2) ...)
-        (num-curve-point 100))
+        (num-curve-point 100)
+        (prev-model-table (get-entity-param curve-entity :spline-models))
+        (control-points (get-entity-param curve-entity :control-points)))
+    (when name
+      (let ((prev-model (gethash name prev-model-table)))
+        (when prev-model
+          (delete-ecs-component prev-model curve-entity))))
+    (unless (> (length control-points) 1)
+      (return-from add-or-replace-spline))
     (dotimes (i num-curve-point)
       (let ((point-on-curve (funcall fn-calc-point
-                                     (get-entity-param curve-entity :control-points)
+                                     control-points
                                      (* 1.0 (/ i (1- num-curve-point))))))
         (push (list (point-2d-x point-on-curve)
                     (point-2d-y point-on-curve))
               curve-points)))
     (let ((spline-model (make-model-2d :model (make-lines :pnt-list curve-points :color color)
-                                       :depth 100))
-          (prev-model-table (get-entity-param curve-entity :spline-models)))
-      (when name
-        (let ((prev-model (gethash name prev-model-table)))
-          (when prev-model
-            (delete-ecs-component prev-model curve-entity))))
+                                       :depth 100)))
       (add-ecs-component spline-model curve-entity)
       (when name
         (setf (gethash name prev-model-table) spline-model)))))
@@ -78,15 +81,27 @@
         (add-ecs-component-list
          entity
          (make-model-2d :offset (clone-point-2d point)
-                        :model (make-solid-circle :r r :color #xffffff))
-         (init-entity-params :control-points control-points
-                             :spline-models (make-hash-table)))))
+                        :model (make-solid-circle :r r :color #xffffff)))))
+    (add-ecs-component-list
+     entity
+     (init-entity-params :control-points control-points
+                         :spline-models (make-hash-table)))
     (add-or-replace-spline entity #'calc-lagrange-point :color #xffff00)
     (add-or-replace-b-spline entity (make-knots-bezier-generator)
                              :color #xff0000)
     (add-or-replace-b-spline-uniform entity *dim-b-spline-uniform*)
     (add-or-replace-b-spline-open-uniform entity *dim-b-spline-open-uniform*)
     (add-ecs-entity entity)))
+
+(defun.ps+ reset-curve-entity (control-points)
+  (register-next-frame-func
+   (lambda ()
+     (let ((prev (find-a-entity-by-tag :curve)))
+       (when prev
+         (delete-ecs-entity prev)))
+     (init-curve-entity control-points))))
+
+;; --- GUI panel --- ;;
 
 (defun.ps+ init-gui-panel ()
   (add-panel-folder "Lagrange interpolation (yellow)")
@@ -108,12 +123,41 @@
                                    (add-or-replace-b-spline-open-uniform
                                     (find-a-entity-by-tag :curve))))))
 
+;; --- keyboard controls --- ;;
+
+(defvar.ps+ *add-control-point-key* :a)
+(defvar.ps+ *reset-key* :b)
+
+(defun.ps+ process-keyboard ()
+  (add-to-monitoring-log (get-left-mouse-state))
+  (when (and (key-down-p *add-control-point-key*)
+             (= (get-left-mouse-state) :down-now))
+    (setf *control-points*
+          (append *control-points*
+                  (list (make-point-2d :x (get-mouse-x)
+                                       :y (get-mouse-y)))))
+    (reset-curve-entity *control-points*))
+  (when (key-down-now-p *reset-key*)
+    (setf *control-points* (list))
+    (reset-curve-entity *control-points*)))
+
+(defun.ps+ add-keyboard-help ()
+  (add-to-event-log (+ "Reset control points by \""
+                       (get-physical-key-name *reset-key*)
+                       "\" key"))
+  (add-to-event-log (+ "Add control point by click with \""
+                       (get-physical-key-name *add-control-point-key*)
+                       "\" key")))
+
+;; --- basic init and update functions --- ;;
+
 (defun.ps+ init-func (scene)
   (init-default-systems :scene scene)
   (init-input)
   (init-gui)
   (init-gui-panel)
-  (init-curve-entity *control-points*))
+  (init-curve-entity *control-points*)
+  (add-keyboard-help))
 
 (defun.ps+ update-func ()
-  )
+  (process-keyboard))
