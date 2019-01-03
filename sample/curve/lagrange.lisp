@@ -25,12 +25,8 @@ If alpha = 1, the result is (car (last control-points))"
 
 (defun.ps+ calc-blending-ratio (num-control-points index alpha)
   "So-called blending function"
-  (/ (reduce (lambda (a b) (* a b))
-             (loop :for k :from 0 :below num-control-points
-                :when (not (= k index))
-                :collect (- alpha k)))
-     (reduce (lambda (a b) (* a b))
-             (loop :for k :from 0 :below num-control-points
-                :for value = (- index k)
-                :when (not (= value 0))
-                :collect value))))
+  (reduce (lambda (a b) (* a b))
+          (loop :for k :from 0 :below num-control-points
+             :when (not (= k index))
+             :collect (/ (- alpha k)
+                         (- index k)))))
