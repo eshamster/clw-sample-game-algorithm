@@ -76,7 +76,6 @@
     (dotimes (i (1+ dim))
       (setf (aref knots i) 0)
       (setf (aref knots (+ i (1+ dim) num-uniform)) 1))
-    ;; WIP
     (dotimes (i num-uniform)
       (setf (aref knots (+ i (1+ dim)))
             (* 1.0 (/ (1+ i) (1+ num-uniform)))))
