@@ -3,6 +3,11 @@
         :ps-experiment
         :cl-ps-ecs
         :cl-web-2d-game)
+  (:import-from :clw-sample-game-algorithm/sample/curve/b-spline
+                :calc-b-spline-point
+                :make-knots-uniform-generator
+                :make-knots-open-uniform-generator
+                :make-knots-bezier-generator)
   (:import-from :clw-sample-game-algorithm/sample/curve/lagrange
                 :calc-lagrange-point))
 (in-package :clw-sample-game-algorithm/sample/curve)
@@ -12,7 +17,7 @@
 (defun.ps+ add-spline (curve-entity fn-calc-point &key color)
   (check-entity-tags curve-entity :curve)
   (let ((curve-points (list)) ; ((x1 y1) (x2 y2) ...)
-        (num-curve-point 30))
+        (num-curve-point 100))
     (dotimes (i num-curve-point)
       (let ((point-on-curve (funcall fn-calc-point
                                      (get-entity-param curve-entity :control-points)
@@ -39,6 +44,12 @@
                         :model (make-solid-circle :r r :color #xffffff))
          (init-entity-params :control-points control-points))))
     (add-spline entity #'calc-lagrange-point :color #xffff00)
+    (let ((knots-generator (make-knots-open-uniform-generator 2)))
+      (add-spline entity (lambda (control-points alpha)
+                           (calc-b-spline-point control-points
+                                                knots-generator
+                                                (* 0.9999 alpha)))
+                  :color #xff00000))
     (add-ecs-entity entity)))
 
 (defun.ps+ init-func (scene)
@@ -46,7 +57,7 @@
   (init-input)
   (init-curve-entity (list (make-point-2d :x 100 :y 100)
                            (make-point-2d :x 120 :y 400)
-                           (make-point-2d :x 400 :y 500)
+                           (make-point-2d :x 400 :y 200)
                            (make-point-2d :x 700 :y 300))))
 
 (defun.ps+ update-func ()
