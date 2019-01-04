@@ -1,5 +1,17 @@
 # Clw-Sample-Game-Algorithm - Samples to try some game algorithms
 
+This includes the following samples.
+
+- navigation
+    - path finding using A* algorithm
+- SAT
+    - collision detection using SAT (Separating Axis Theorem)
+- curve
+    - curve drawing using ...
+        - Lagrange interpolation
+        - B-Spline
+        - Bezier (implemented as subset of B-Spline)
+
 ## Usage
 
 ```lisp
