@@ -9,6 +9,8 @@
                 :init-vehicle-component)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/steering
                 :steering
+                :steering-seek-on-p
+                :steering-flee-on-p
                 :init-steering
                 :set-seek-point)
   (:import-from :ps-experiment/common-macros
@@ -20,7 +22,7 @@
 
 (defun.ps+ make-state-manager-entity ()
   (let ((entity (make-ecs-entity))
-        (manager (init-game-state-manager (make-seek-state))))
+        (manager (init-game-state-manager (make-seek-or-flee-state :mode :flee))))
     (add-ecs-component-list
      entity
      (make-script-2d :func (lambda (entity)
@@ -49,15 +51,19 @@
     (vehicle-tester-state
      (:include game-state)))
 
-;; --- seek --- ;;
+;; --- seek or flee --- ;;
 
 (defstruct.ps+
-    (seek-state
+    (seek-or-flee-state
      (:include vehicle-tester-state
                (start-process
-                (state-lambda ()
+                (state-lambda (mode)
                   (let ((vehicle (make-test-vehicle))
                         (target (make-target-entity)))
+                    (with-ecs-components (steering) vehicle
+                      (ecase mode
+                        (:seek (setf (steering-seek-on-p steering) t))
+                        (:flee (setf (steering-flee-on-p steering) t))))
                     (add-ecs-entity target)
                     (add-ecs-component-list
                      vehicle
@@ -67,7 +73,11 @@
                               (set-seek-point
                                (get-ecs-component 'steering vehicle)
                                (get-ecs-component 'point-2d target)))))
-                    (add-ecs-entity vehicle)))))))
+                    (add-ecs-entity vehicle))))))
+    mode ; :seek or :flee
+  )
+
+;; --- utils --- ;;
 
 (defun.ps+ make-target-entity ()
   (let ((target (make-ecs-entity))
