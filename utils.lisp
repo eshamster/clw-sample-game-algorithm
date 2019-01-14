@@ -1,7 +1,10 @@
 (defpackage clw-sample-game-algorithm/utils
   (:use :cl)
   (:export :use-this-package-as-sample
-           :make-js-main-file))
+           :make-js-main-file)
+  (:import-from :ps-experiment
+                :defvar.ps+
+                :defun.ps+))
 (in-package :clw-sample-game-algorithm/utils)
 
 (defvar *sample-package-table (make-hash-table))
@@ -12,9 +15,9 @@
   `(progn
      (defun ,(intern "OUTPUT-JS-CODE" *package*) (stream)
        (princ
-        (pse:with-use-ps-pack (:this)
-          (let ((width 800)
-                (height 600))
+        (pse:with-use-ps-pack (:this :clw-sample-game-algorithm/utils)
+          (let ((width *screen-width*)
+                (height *screen-height*))
             (cl-web-2d-game:start-2d-game
              :screen-width width
              :screen-height height
@@ -37,3 +40,23 @@
                      (find-package (format nil "CLW-SAMPLE-GAME-ALGORITHM/SAMPLE/~A"
                                            (string-upcase name))))
              out)))
+
+(eval-when (:execute :compile-toplevel :load-toplevel)
+  (defvar.ps+ *screen-width* 800)
+  (defvar.ps+ *screen-height* 600)
+
+  (defun.ps+ calc-absolute-length (relative-length base-length)
+    (* relative-length base-length 0.001))
+
+  "#Ex1. '#lx500' represents a half length of the field width."
+  "#Ex2. '#ly500' represents a half length of the field height."
+  (set-dispatch-macro-character
+   #\# #\l
+   #'(lambda (stream &rest rest)
+       (declare (ignore rest))
+       (case (peek-char nil stream)
+         (#\x (read-char stream)
+              `(calc-absolute-length ,(read stream) *screen-width*))
+         (#\y (read-char stream)
+              `(calc-absolute-length ,(read stream) *screen-height*))
+         (t (error "Not recognized character after #l"))))))
