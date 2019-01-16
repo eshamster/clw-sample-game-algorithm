@@ -11,6 +11,7 @@
                 :steering
                 :steering-seek-on-p
                 :steering-flee-on-p
+                :steering-arrive-on-p
                 :init-steering
                 :set-seek-point)
   (:import-from :ps-experiment/common-macros
@@ -22,7 +23,7 @@
 
 (defun.ps+ make-state-manager-entity ()
   (let ((entity (make-ecs-entity))
-        (manager (init-game-state-manager (make-seek-or-flee-state :mode :flee))))
+        (manager (init-game-state-manager (make-seek-or-flee-state :mode :arrive))))
     (add-ecs-component-list
      entity
      (make-script-2d :func (lambda (entity)
@@ -51,7 +52,7 @@
     (vehicle-tester-state
      (:include game-state)))
 
-;; --- seek or flee --- ;;
+;; --- seek, flee or arrive --- ;;
 
 (defstruct.ps+
     (seek-or-flee-state
@@ -63,7 +64,8 @@
                     (with-ecs-components (steering) vehicle
                       (ecase mode
                         (:seek (setf (steering-seek-on-p steering) t))
-                        (:flee (setf (steering-flee-on-p steering) t))))
+                        (:flee (setf (steering-flee-on-p steering) t))
+                        (:arrive (setf (steering-arrive-on-p steering) t))))
                     (add-ecs-entity target)
                     (add-ecs-component-list
                      vehicle
@@ -74,7 +76,7 @@
                                (get-ecs-component 'steering vehicle)
                                (get-ecs-component 'point-2d target)))))
                     (add-ecs-entity vehicle))))))
-    mode ; :seek or :flee
+    mode ; :seek, :flee or :arrive
   )
 
 ;; --- utils --- ;;
