@@ -9,11 +9,10 @@
                 :init-vehicle-component)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/steering
                 :steering
-                :steering-seek-on-p
-                :steering-flee-on-p
-                :steering-arrive-on-p
                 :init-steering
-                :set-seek-point)
+                :set-seek-point
+                :set-flee-point
+                :set-arrive-point)
   (:import-from :ps-experiment/common-macros
                 :setf-with))
 (in-package :clw-sample-game-algorithm/sample/vehicle/tester)
@@ -61,20 +60,18 @@
                 (state-lambda (mode)
                   (let ((vehicle (make-test-vehicle))
                         (target (make-target-entity)))
-                    (with-ecs-components (steering) vehicle
-                      (ecase mode
-                        (:seek (setf (steering-seek-on-p steering) t))
-                        (:flee (setf (steering-flee-on-p steering) t))
-                        (:arrive (setf (steering-arrive-on-p steering) t))))
                     (add-ecs-entity target)
                     (add-ecs-component-list
                      vehicle
                      (make-script-2d
                       :func (lambda (entity)
                               (declare (ignore entity))
-                              (set-seek-point
-                               (get-ecs-component 'steering vehicle)
-                               (get-ecs-component 'point-2d target)))))
+                              (let ((steering (get-ecs-component 'steering vehicle))
+                                    (target-point (get-ecs-component 'point-2d target)))
+                                (ecase mode
+                                  (:seek (set-seek-point steering target-point))
+                                  (:flee (set-flee-point steering target-point))
+                                  (:arrive (set-arrive-point steering target-point)))))))
                     (add-ecs-entity vehicle))))))
     mode ; :seek, :flee or :arrive
   )
