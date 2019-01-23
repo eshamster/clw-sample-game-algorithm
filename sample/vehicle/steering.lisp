@@ -8,7 +8,8 @@
            :calc-steering
            :set-seek-point
            :set-flee-point
-           :set-arrive-point)
+           :set-arrive-point
+           :set-wander-behavior)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-velocity
@@ -61,6 +62,15 @@
                                (arrive vehicle-cmp vehicle-point target-point
                                        :diceleration diceleration))))
 
+(defun.ps+ set-wander-behavior (steering &key
+                                         (wander-radius #lx20)
+                                         (wander-dist #lx30)
+                                         (wander-jitter #lx3))
+  (register-force-calculator :wander steering
+                             (init-wander :wander-radius wander-radius
+                                          :wander-dist wander-dist
+                                          :wander-jitter wander-jitter)))
+
 ;; TODO: functions to disable each behavior
 
 ;; --- behavior --- ;;
@@ -89,3 +99,30 @@
           (decf-vector-2d desired-velocity
                           (vehicle-component-velocity vehicle-cmp)))
         (make-vector-2d))))
+
+(defun.ps+ init-wander (&key wander-radius wander-dist wander-jitter)
+  (let ((wander-target (make-vector-2d :x wander-radius :y 0)))
+    (lambda (vehicle-cmp vehicle-point)
+      (declare (ignore vehicle-cmp))
+      (incf-vector-2d wander-target
+                      (make-vector-2d :x (* (random-clamped) wander-jitter)
+                                      :y (* (random-clamped) wander-jitter)))
+      (setf-vector-2d-abs wander-target wander-radius)
+      (let* ((target-local (incf-vector-2d (clone-vector-2d wander-target)
+                                           (make-vector-2d :x wander-dist)))
+             (target-world (transformf-point
+                            (make-point-2d :x (vector-2d-x target-local)
+                                           :y (vector-2d-y target-local))
+                            vehicle-point)))
+        (decf-vector-2d (clone-vector-2d target-world)
+                        vehicle-point)))))
+
+;; --- aux --- ;;
+
+;; Note: (ps (random))     -> Math.random()
+;;       (ps (random 1.0)) -> Math.floor(1.0 * Math.random());
+(defun.ps random-clamped ()
+  (1- (* 2 (random))))
+
+(defun random-clamped ()
+  (1- (random 2.0)))

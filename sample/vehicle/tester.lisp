@@ -12,7 +12,8 @@
                 :init-steering
                 :set-seek-point
                 :set-flee-point
-                :set-arrive-point)
+                :set-arrive-point
+                :set-wander-behavior)
   (:import-from :ps-experiment/common-macros
                 :setf-with))
 (in-package :clw-sample-game-algorithm/sample/vehicle/tester)
@@ -22,7 +23,7 @@
 
 (defun.ps+ make-state-manager-entity ()
   (let ((entity (make-ecs-entity))
-        (manager (init-game-state-manager (make-seek-or-flee-state :mode :arrive))))
+        (manager (init-game-state-manager (make-wander-state))))
     (add-ecs-component-list
      entity
      (make-script-2d :func (lambda (entity)
@@ -75,6 +76,36 @@
                     (add-ecs-entity vehicle))))))
     mode ; :seek, :flee or :arrive
   )
+
+;; --- wander --- ;;
+
+(defun.ps+ make-wander-vehicle ()
+  (let ((vehicle (make-test-vehicle))
+        (wander-radius #lx20)
+        (wander-dist #lx40))
+    (with-ecs-components (steering) vehicle
+      (set-wander-behavior steering
+                           :wander-radius wander-radius
+                           :wander-dist wander-dist)
+      (add-ecs-component-list
+       vehicle
+       (make-script-2d :func (lambda (entity)
+                               (with-ecs-components (point-2d) entity
+                                 (setf-with point-2d
+                                   x (mod x #lx1000)
+                                   y (mod y #ly1000)))))
+       (make-model-2d :model (make-wired-circle :r wander-radius
+                                                :color #x888888)
+                      :offset (make-point-2d :x wander-dist)
+                      :depth 100)))
+    vehicle))
+
+(defstruct.ps+
+    (wander-state
+     (:include vehicle-tester-state
+               (start-process
+                (state-lambda ()
+                  (add-ecs-entity (make-wander-vehicle)))))))
 
 ;; --- utils --- ;;
 
