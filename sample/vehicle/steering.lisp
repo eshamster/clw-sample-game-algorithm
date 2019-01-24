@@ -93,8 +93,7 @@
     (if (> dist 0)
         (let* ((speed (min (vehicle-component-max-speed vehicle-cmp)
                            (* dist diceleration)))
-               (to-target (decf-vector-2d (clone-vector-2d target-point)
-                                          vehicle-point))
+               (to-target (sub-vector-2d target-point vehicle-point))
                (desired-velocity (*-vec-scalar to-target (/ speed dist))))
           (decf-vector-2d desired-velocity
                           (vehicle-component-velocity vehicle-cmp)))
@@ -108,14 +107,13 @@
                       (make-vector-2d :x (* (random-clamped) wander-jitter)
                                       :y (* (random-clamped) wander-jitter)))
       (setf-vector-2d-abs wander-target wander-radius)
-      (let* ((target-local (incf-vector-2d (clone-vector-2d wander-target)
-                                           (make-vector-2d :x wander-dist)))
+      (let* ((target-local (add-vector-2d wander-target
+                                          (make-vector-2d :x wander-dist)))
              (target-world (transformf-point
                             (make-point-2d :x (vector-2d-x target-local)
                                            :y (vector-2d-y target-local))
                             vehicle-point)))
-        (decf-vector-2d (clone-vector-2d target-world)
-                        vehicle-point)))))
+        (sub-vector-2d target-world vehicle-point)))))
 
 ;; --- aux --- ;;
 
