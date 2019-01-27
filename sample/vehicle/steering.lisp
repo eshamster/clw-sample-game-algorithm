@@ -9,9 +9,11 @@
            :set-seek-point
            :set-flee-point
            :set-arrive-point
-           :set-wander-behavior)
+           :set-wander-behavior
+           :set-pursuit-target)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
+                :vehicle-component-heading
                 :vehicle-component-velocity
                 :vehicle-component-max-force
                 :vehicle-component-max-speed))
@@ -62,6 +64,15 @@
                                (arrive vehicle-cmp vehicle-point target-point
                                        :diceleration diceleration))))
 
+(defun.ps+ set-pursuit-target (steering evader)
+  (check-type evader ecs-entity)
+  (register-force-calculator :pursuit steering
+                             (lambda (vehicle-cmp vehicle-point)
+                               (with-ecs-components (vehicle-component) evader
+                                 (pursuit vehicle-cmp vehicle-point
+                                          vehicle-component
+                                          (calc-global-point evader))))))
+
 (defun.ps+ set-wander-behavior (steering &key
                                          (wander-radius #lx20)
                                          (wander-dist #lx30)
@@ -98,6 +109,29 @@
           (decf-vector-2d desired-velocity
                           (vehicle-component-velocity vehicle-cmp)))
         (make-vector-2d))))
+
+(defun.ps+ calc-pursuit-point (vehicle-cmp vehicle-point evader-vehicle-cmp evader-point)
+  (let* ((to-evader (sub-vector-2d evader-point vehicle-point))
+         (vehicle-heading (vehicle-component-heading vehicle-cmp))
+         (relative-heading (calc-inner-product
+                            vehicle-heading
+                            (vehicle-component-heading evader-vehicle-cmp))))
+    ;; If face each other, only do seek
+    (when (and (> (calc-inner-product to-evader vehicle-heading))
+               ;; acos(0.95) = 18 degrees
+               (< relative-heading -0.95))
+      (return-from calc-pursuit-point evader-point))
+    (let* ((evader-velocity (vehicle-component-velocity evader-vehicle-cmp))
+           (look-ahead-time
+            (/ (vector-2d-abs to-evader)
+               (+ (vehicle-component-max-speed vehicle-cmp)
+                  (vector-2d-abs evader-velocity)))))
+      (add-vector-2d evader-point
+                     (*-vec-scalar evader-velocity look-ahead-time)))))
+
+(defun.ps+ pursuit (vehicle-cmp vehicle-point evader-vehicle-cmp evader-point)
+  (seek vehicle-cmp vehicle-point
+        (calc-pursuit-point vehicle-cmp vehicle-point evader-vehicle-cmp evader-point)))
 
 (defun.ps+ init-wander (&key wander-radius wander-dist wander-jitter)
   (let ((wander-target (make-vector-2d :x wander-radius :y 0)))
