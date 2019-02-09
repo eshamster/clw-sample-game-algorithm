@@ -10,13 +10,18 @@
            :set-flee-point
            :set-arrive-point
            :set-wander-behavior
-           :set-pursuit-target)
+           :set-pursuit-target
+           :set-avoid-obstacle)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-heading
                 :vehicle-component-velocity
                 :vehicle-component-max-force
-                :vehicle-component-max-speed))
+                :vehicle-component-max-speed)
+  (:import-from :clw-sample-game-algorithm/sample/vehicle/obstacle
+                :do-vehicle-obstacle
+                :calc-intersect-distance
+                :get-obstacle-r))
 (in-package :clw-sample-game-algorithm/sample/vehicle/steering)
 
 (defstruct.ps+ (steering (:include ecs-component))
@@ -81,6 +86,16 @@
                              (init-wander :wander-radius wander-radius
                                           :wander-dist wander-dist
                                           :wander-jitter wander-jitter)))
+
+(defun.ps+ set-avoid-obstacle (steering &key
+                                        (vehicle-width #lx10)
+                                        (min-search-dist #lx20)
+                                        (max-search-dist #lx30))
+  (register-force-calculator :avoid-obstacle steering
+                             (init-avoid-obstacle
+                              :vehicle-width vehicle-width
+                              :min-search-dist min-search-dist
+                              :max-search-dist max-search-dist)))
 
 ;; TODO: functions to disable each behavior
 
@@ -148,6 +163,42 @@
                                            :y (vector-2d-y target-local))
                             vehicle-point)))
         (sub-vector-2d target-world vehicle-point)))))
+
+;; avoid obstacle
+
+(defun.ps+ init-avoid-obstacle (&key vehicle-width min-search-dist max-search-dist
+                                     (breaking-weight 0.4))
+  (assert (>= max-search-dist min-search-dist))
+  (lambda (vehicle-cmp vehicle-point)
+    (let ((search-dist (lerp-scalar min-search-dist
+                                    max-search-dist
+                                    (/ (vector-2d-abs (vehicle-component-velocity vehicle-cmp))
+                                       (vehicle-component-max-speed vehicle-cmp))))
+          (closest-obstacle nil)
+          (closest-dist nil))
+      (do-vehicle-obstacle (obstacle)
+        (let ((dist (calc-intersect-distance
+                     obstacle vehicle-point vehicle-width search-dist)))
+          (when (and dist
+                     (or (null closest-dist)
+                         (< dist closest-dist)))
+            (setf closest-obstacle obstacle
+                  closest-dist dist))))
+      (if closest-obstacle
+          (let* ((obstacle-r (get-obstacle-r closest-obstacle))
+                 (obstacle-local-y (vector-2d-y
+                                    (transformf-point-inverse
+                                     (calc-global-point closest-obstacle)
+                                     vehicle-point)))
+                 (multiplier (+ 1.0 (/ (- search-dist closest-dist)
+                                       search-dist)))
+                 (local-force-y (* (- obstacle-r (abs obstacle-local-y))
+                                   (if (> obstacle-local-y 0) 1 -1)
+                                   multiplier))
+                 (local-force-x (* (- obstacle-r closest-dist) breaking-weight)))
+            (transformf-point (make-point-2d :x local-force-x :y local-force-y)
+                              vehicle-point))
+          (make-vector-2d)))))
 
 ;; --- aux --- ;;
 

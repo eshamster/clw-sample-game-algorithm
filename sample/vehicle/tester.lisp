@@ -6,7 +6,11 @@
   (:export :init-vehicle-tester)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
+                :vehicle-component-max-speed
+                :vehicle-component-velocity
                 :init-vehicle-component)
+  (:import-from :clw-sample-game-algorithm/sample/vehicle/obstacle
+                :init-vehicle-obstacle)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/steering
                 :steering
                 :init-steering
@@ -14,7 +18,8 @@
                 :set-flee-point
                 :set-arrive-point
                 :set-wander-behavior
-                :set-pursuit-target)
+                :set-pursuit-target
+                :set-avoid-obstacle)
   (:import-from :ps-experiment/common-macros
                 :setf-with))
 (in-package :clw-sample-game-algorithm/sample/vehicle/tester)
@@ -24,7 +29,7 @@
 
 (defun.ps+ make-state-manager-entity ()
   (let ((entity (make-ecs-entity))
-        (manager (init-game-state-manager (make-tester-state :pursuit))))
+        (manager (init-game-state-manager (make-tester-state :avoid-obstacle))))
     (add-ecs-component-list
      entity
      (make-script-2d :func (lambda (entity)
@@ -36,7 +41,8 @@
   (ecase mode
     ((:seek :flee :arrive) (make-seek-or-flee-state :mode mode))
     (:pursuit (make-pursuit-state))
-    (:wander (make-wander-state))))
+    (:wander (make-wander-state))
+    (:avoid-obstacle (make-avoid-obstacle-state))))
 
 (defun.ps+ make-test-vehicle (&key (first-x #lx500)
                                    (first-y #ly500))
@@ -128,7 +134,7 @@
 
 ;; --- wander --- ;;
 
-(defun.ps+ make-wander-vehicle ()
+(defun.ps+ make-wander-vehicle (&key (display-wander-circle-p t))
   (let ((vehicle (make-test-vehicle))
         (wander-radius #lx20)
         (wander-dist #lx40))
@@ -142,11 +148,14 @@
                                (with-ecs-components (point-2d) entity
                                  (setf-with point-2d
                                    x (mod x #lx1000)
-                                   y (mod y #ly1000)))))
-       (make-model-2d :model (make-wired-circle :r wander-radius
-                                                :color #x888888)
-                      :offset (make-point-2d :x wander-dist)
-                      :depth 100)))
+                                   y (mod y #ly1000))))))
+      (when display-wander-circle-p
+        (add-ecs-component-list
+         vehicle
+         (make-model-2d :model (make-wired-circle :r wander-radius
+                                                  :color #x888888)
+                        :offset (make-point-2d :x wander-dist)
+                        :depth 100))))
     vehicle))
 
 (defstruct.ps+
@@ -156,7 +165,90 @@
                 (state-lambda ()
                   (add-ecs-entity (make-wander-vehicle)))))))
 
+;; --- avoid obstacle --- ;;
+
+(defun.ps+ init-obstacles (&key (num 15) (min-r #lx40) (max-r #lx80))
+  (let ((obstacles (list))
+        (max-trial 30)
+        (min-dist #lx20)
+        (margin #lx30))
+    (labels ((overlap-p (r x y)
+               (dolist (old obstacles)
+                 (let ((old-x (getf old :x))
+                       (old-y (getf old :y))
+                       (old-r (getf old :r)))
+                   (when (< (calc-dist (make-point-2d :x x :y y)
+                                       (make-point-2d :x old-x :y old-y))
+                            (+ r old-r min-dist))
+                     (return-from overlap-p t))))
+               nil)
+             (make-one (rest-trial)
+               (let* ((r (lerp-scalar min-r max-r (random1)))
+                      (x (lerp-scalar (+ r margin) (- #lx1000 r margin) (random1)))
+                      (y (lerp-scalar (+ r margin) (- #ly1000 r margin) (random1))))
+                 (if (or (<= rest-trial 0)
+                         (not (overlap-p r x y)))
+                     (progn
+                       (push (list :x x :y y :r r) obstacles)
+                       (init-vehicle-obstacle :point (make-point-2d :x x :y y)
+                                              :r r))
+                     (make-one (1- rest-trial))))))
+      (dotimes (i num)
+        (add-ecs-entity (make-one max-trial))))))
+
+(defun.ps+ update-search-dist-model (vehicle vehicle-width min-search-dist max-search-dist)
+  (with-ecs-components (vehicle-component) vehicle
+    (let* ((search-dist (lerp-scalar
+                         min-search-dist max-search-dist
+                         (/ (vector-2d-abs (vehicle-component-velocity vehicle-component))
+                            (vehicle-component-max-speed vehicle-component))))
+           (model (make-model-2d :model (make-wired-rect :width search-dist
+                                                         :height vehicle-width
+                                                         :color #x888888)
+                                 :offset (make-point-2d :y (* vehicle-width -1/2))))
+           (pre-model (get-entity-param vehicle :search-dist-model)))
+      (when pre-model
+        (delete-ecs-component pre-model vehicle))
+      (add-ecs-component model vehicle)
+      (set-entity-param vehicle :search-dist-model model))))
+
+(defstruct.ps+
+    (avoid-obstacle-state
+     (:include vehicle-tester-state
+               (start-process
+                (state-lambda ()
+                  (init-obstacles)
+                  (let* ((vehicle (make-wander-vehicle :display-wander-circle-p nil))
+                         (steering (get-ecs-component 'steering vehicle))
+                         (vehicle-width #lx20)
+                         (min-search-dist #lx50)
+                         (max-search-dist #lx100))
+                    (add-ecs-component-list
+                     vehicle
+                     (make-script-2d
+                      :func (lambda (entity)
+                              (update-search-dist-model
+                               entity
+                               vehicle-width min-search-dist max-search-dist)))
+                     (init-entity-params :search-dist-model nil))
+                    (setf-with (get-ecs-component 'vehicle-component vehicle)
+                      max-speed #lx2
+                      max-force #lx0.08)
+                    (set-avoid-obstacle steering
+                                        :vehicle-width vehicle-width
+                                        :min-search-dist min-search-dist
+                                        :max-search-dist max-search-dist)
+                    (add-ecs-entity vehicle))
+                  t)))))
+
 ;; --- utils --- ;;
+
+;; Note: (ps (random))     -> Math.random()
+;;       (ps (random 1.0)) -> Math.floor(1.0 * Math.random());
+(defun.ps random1 ()
+  (random))
+(defun random1 ()
+  (random 1.0))
 
 (defun.ps+ make-target-entity ()
   (let ((target (make-ecs-entity))
