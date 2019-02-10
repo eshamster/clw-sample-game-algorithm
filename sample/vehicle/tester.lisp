@@ -20,22 +20,24 @@
                 :set-wander-behavior
                 :set-pursuit-target
                 :set-avoid-obstacle)
+  (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state-manager
+                :init-test-state-manager
+                :register-test-state
+                :switch-test-state)
   (:import-from :ps-experiment/common-macros
                 :setf-with))
 (in-package :clw-sample-game-algorithm/sample/vehicle/tester)
 
 (defun.ps+ init-vehicle-tester ()
-  (add-ecs-entity (make-state-manager-entity)))
+  (let ((test-state-manager (init-test-state-manager)))
+    (register-all-test-states test-state-manager)
+    (switch-test-state test-state-manager :seek)))
 
-(defun.ps+ make-state-manager-entity ()
-  (let ((entity (make-ecs-entity))
-        (manager (init-game-state-manager (make-tester-state :avoid-obstacle))))
-    (add-ecs-component-list
-     entity
-     (make-script-2d :func (lambda (entity)
-                             (declare (ignore entity))
-                             (process-game-state manager))))
-    entity))
+(defun.ps+ register-all-test-states (test-state-manager)
+  (dolist (mode (list :seek :flee :arrive
+                      :pursuit :wander :avoid-obstacle))
+    (register-test-state test-state-manager mode
+                         (lambda () (make-tester-state mode)))))
 
 (defun.ps+ make-tester-state (mode)
   (ecase mode
@@ -64,30 +66,40 @@
 
 (defstruct.ps+
     (vehicle-tester-state
-     (:include game-state)))
+     (:include game-state
+               (end-process
+                (state-lambda (parent)
+                  (when (find-the-entity parent)
+                    (register-next-frame-func
+                     (lambda () (delete-ecs-entity parent))))))))
+    (parent (make-ecs-entity)))
 
 ;; --- seek, flee or arrive --- ;;
+
+;; TODO: Rename state
 
 (defstruct.ps+
     (seek-or-flee-state
      (:include vehicle-tester-state
                (start-process
-                (state-lambda (mode)
-                  (let ((vehicle (make-test-vehicle))
-                        (target (make-target-entity)))
-                    (add-ecs-entity target)
-                    (add-ecs-component-list
-                     vehicle
-                     (make-script-2d
-                      :func (lambda (entity)
-                              (declare (ignore entity))
-                              (let ((steering (get-ecs-component 'steering vehicle))
-                                    (target-point (get-ecs-component 'point-2d target)))
-                                (ecase mode
-                                  (:seek (set-seek-point steering target-point))
-                                  (:flee (set-flee-point steering target-point))
-                                  (:arrive (set-arrive-point steering target-point)))))))
-                    (add-ecs-entity vehicle))))))
+                (state-lambda (mode parent)
+                  (add-ecs-entity parent)
+                  (with-ecs-entity-parent (parent)
+                    (let ((vehicle (make-test-vehicle))
+                          (target (make-target-entity)))
+                      (add-ecs-entity target)
+                      (add-ecs-component-list
+                       vehicle
+                       (make-script-2d
+                        :func (lambda (entity)
+                                (declare (ignore entity))
+                                (let ((steering (get-ecs-component 'steering vehicle))
+                                      (target-point (get-ecs-component 'point-2d target)))
+                                  (ecase mode
+                                    (:seek (set-seek-point steering target-point))
+                                    (:flee (set-flee-point steering target-point))
+                                    (:arrive (set-arrive-point steering target-point)))))))
+                      (add-ecs-entity vehicle)))))))
     mode ; :seek, :flee or :arrive
   )
 
@@ -124,13 +136,15 @@
     (pursuit-state
      (:include vehicle-tester-state
                (start-process
-                (state-lambda ()
-                  (let* ((evader (make-wander-vehicle))
-                         (pursuit-vehicle (make-pursuit-vehicle evader)))
-                    (add-ecs-entity evader)
-                    (add-ecs-entity pursuit-vehicle)
-                    (add-ecs-entity (make-pursuit-target-visualizer
-                                     pursuit-vehicle evader))))))))
+                (state-lambda (parent)
+                  (add-ecs-entity parent)
+                  (with-ecs-entity-parent (parent)
+                    (let* ((evader (make-wander-vehicle))
+                           (pursuit-vehicle (make-pursuit-vehicle evader)))
+                      (add-ecs-entity evader)
+                      (add-ecs-entity pursuit-vehicle)
+                      (add-ecs-entity (make-pursuit-target-visualizer
+                                       pursuit-vehicle evader)))))))))
 
 ;; --- wander --- ;;
 
@@ -162,8 +176,10 @@
     (wander-state
      (:include vehicle-tester-state
                (start-process
-                (state-lambda ()
-                  (add-ecs-entity (make-wander-vehicle)))))))
+                (state-lambda (parent)
+                  (add-ecs-entity parent)
+                  (with-ecs-entity-parent (parent)
+                    (add-ecs-entity (make-wander-vehicle))))))))
 
 ;; --- avoid obstacle --- ;;
 
@@ -216,29 +232,31 @@
     (avoid-obstacle-state
      (:include vehicle-tester-state
                (start-process
-                (state-lambda ()
-                  (init-obstacles)
-                  (let* ((vehicle (make-wander-vehicle :display-wander-circle-p nil))
-                         (steering (get-ecs-component 'steering vehicle))
-                         (vehicle-width #lx20)
-                         (min-search-dist #lx50)
-                         (max-search-dist #lx100))
-                    (add-ecs-component-list
-                     vehicle
-                     (make-script-2d
-                      :func (lambda (entity)
-                              (update-search-dist-model
-                               entity
-                               vehicle-width min-search-dist max-search-dist)))
-                     (init-entity-params :search-dist-model nil))
-                    (setf-with (get-ecs-component 'vehicle-component vehicle)
-                      max-speed #lx2
-                      max-force #lx0.08)
-                    (set-avoid-obstacle steering
-                                        :vehicle-width vehicle-width
-                                        :min-search-dist min-search-dist
-                                        :max-search-dist max-search-dist)
-                    (add-ecs-entity vehicle))
+                (state-lambda (parent)
+                  (add-ecs-entity parent)
+                  (with-ecs-entity-parent (parent)
+                    (init-obstacles)
+                    (let* ((vehicle (make-wander-vehicle :display-wander-circle-p nil))
+                           (steering (get-ecs-component 'steering vehicle))
+                           (vehicle-width #lx20)
+                           (min-search-dist #lx50)
+                           (max-search-dist #lx100))
+                      (add-ecs-component-list
+                       vehicle
+                       (make-script-2d
+                        :func (lambda (entity)
+                                (update-search-dist-model
+                                 entity
+                                 vehicle-width min-search-dist max-search-dist)))
+                       (init-entity-params :search-dist-model nil))
+                      (setf-with (get-ecs-component 'vehicle-component vehicle)
+                        max-speed #lx2
+                        max-force #lx0.08)
+                      (set-avoid-obstacle steering
+                                          :vehicle-width vehicle-width
+                                          :min-search-dist min-search-dist
+                                          :max-search-dist max-search-dist)
+                      (add-ecs-entity vehicle)))
                   t)))))
 
 ;; --- utils --- ;;
