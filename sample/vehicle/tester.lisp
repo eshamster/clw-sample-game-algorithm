@@ -19,7 +19,8 @@
                 :set-arrive-point
                 :set-wander-behavior
                 :set-pursuit-target
-                :set-avoid-obstacle)
+                :set-avoid-obstacle
+                :set-interpose)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state-manager
                 :init-test-state-manager
                 :register-test-state
@@ -35,7 +36,7 @@
 
 (defun.ps+ register-all-test-states (test-state-manager)
   (dolist (mode (list :seek :flee :arrive
-                      :pursuit :wander :avoid-obstacle))
+                      :pursuit :wander :avoid-obstacle :interpose))
     (register-test-state test-state-manager mode
                          (lambda () (make-tester-state mode)))))
 
@@ -44,10 +45,12 @@
     ((:seek :flee :arrive) (make-seek-or-flee-state :mode mode))
     (:pursuit (make-pursuit-state))
     (:wander (make-wander-state))
-    (:avoid-obstacle (make-avoid-obstacle-state))))
+    (:avoid-obstacle (make-avoid-obstacle-state))
+    (:interpose (make-interpose-state))))
 
 (defun.ps+ make-test-vehicle (&key (first-x #lx500)
-                                   (first-y #ly500))
+                                   (first-y #ly500)
+                                   (color #xffffff))
   (let* ((vehicle (make-ecs-entity))
          (width #lx30)
          (height (/ width 2)))
@@ -61,7 +64,7 @@
                             :pnt-list (list (list (* -1/2 width) (*  1/2 height))
                                             (list (* -1/2 width) (* -1/2 height))
                                             (list (* 1/2 width) 0))
-                            :color #xffffff)))
+                            :color color)))
     vehicle))
 
 (defstruct.ps+
@@ -256,6 +259,28 @@
                                           :vehicle-width vehicle-width
                                           :min-search-dist min-search-dist
                                           :max-search-dist max-search-dist)
+                      (add-ecs-entity vehicle)))
+                  t)))))
+
+;; interpose
+
+(defstruct.ps+
+    (interpose-state
+     (:include vehicle-tester-state
+               (start-process
+                (state-lambda (parent)
+                  (add-ecs-entity parent)
+                  (with-ecs-entity-parent (parent)
+                    (let ((target1 (make-wander-vehicle :display-wander-circle-p nil))
+                          (target2 (make-wander-vehicle :display-wander-circle-p nil))
+                          (vehicle (make-test-vehicle :color #xff0000)))
+                      (add-ecs-entity target1)
+                      (add-ecs-entity target2)
+                      (set-interpose (get-ecs-component 'steering vehicle)
+                                     :target-vehicle1 target1
+                                     :target-vehicle2 target2)
+                      (add-ecs-component-list
+                       vehicle)
                       (add-ecs-entity vehicle)))
                   t)))))
 

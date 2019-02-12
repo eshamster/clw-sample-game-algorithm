@@ -11,7 +11,8 @@
            :set-arrive-point
            :set-wander-behavior
            :set-pursuit-target
-           :set-avoid-obstacle)
+           :set-avoid-obstacle
+           :set-interpose)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-heading
@@ -96,6 +97,11 @@
                               :vehicle-width vehicle-width
                               :min-search-dist min-search-dist
                               :max-search-dist max-search-dist)))
+
+(defun.ps+ set-interpose (steering &key target-vehicle1 target-vehicle2)
+  (register-force-calculator :interpose steering
+                             (init-interpose :target1 target-vehicle1
+                                             :target2 target-vehicle2)))
 
 ;; TODO: functions to disable each behavior
 
@@ -199,6 +205,30 @@
             (transformf-point (make-point-2d :x local-force-x :y local-force-y)
                               vehicle-point))
           (make-vector-2d)))))
+
+;; interpose
+
+(defun.ps+ init-interpose (&key target1 target2)
+  (flet ((calc-mid-point (vec1 vec2)
+           (/-vec-scalar (add-vector-2d vec1 vec2) 2.0)))
+    (lambda (vehicle-cmp vehicle-point)
+      (let* ((pnt1 (calc-global-point target1))
+             (pnt2 (calc-global-point target2))
+             (mid-pnt (calc-mid-point pnt1 pnt2))
+             (time-to-reach-mid-point
+              (/ (calc-dist vehicle-point mid-pnt)
+                 (vehicle-component-max-speed vehicle-cmp))))
+        (flet (;; Assume target will go to straight with same speed
+               (estimate-future-point (cur-pnt cmp)
+                 (add-vector-2d cur-pnt
+                                (*-vec-scalar (vehicle-component-velocity cmp)
+                                              time-to-reach-mid-point))))
+          (with-ecs-components ((cmp1 vehicle-component)) target1
+            (with-ecs-components ((cmp2 vehicle-component)) target2
+              (arrive vehicle-cmp vehicle-point
+                      (calc-mid-point (estimate-future-point pnt1 cmp1)
+                                      (estimate-future-point pnt2 cmp2))
+                      :diceleration 0.1))))))))
 
 ;; --- aux --- ;;
 
