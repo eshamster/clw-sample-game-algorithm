@@ -154,7 +154,7 @@
 (defun.ps+ make-wander-vehicle (&key (display-wander-circle-p t))
   (let ((vehicle (make-test-vehicle))
         (wander-radius #lx20)
-        (wander-dist #lx40))
+        (wander-dist #lx60))
     (with-ecs-components (steering) vehicle
       (set-wander-behavior steering
                            :wander-radius wander-radius

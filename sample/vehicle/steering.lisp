@@ -121,6 +121,7 @@
         (make-vector-2d))))
 
 (defun.ps+ arrive (vehicle-cmp vehicle-point target-point &key diceleration)
+  (assert (and diceleration (> diceleration 0)))
   (let ((dist (calc-dist target-point vehicle-point)))
     (if (> dist 0)
         (let* ((speed (min (vehicle-component-max-speed vehicle-cmp)
@@ -196,14 +197,15 @@
                                     (transformf-point-inverse
                                      (calc-global-point closest-obstacle)
                                      vehicle-point)))
-                 (multiplier (+ 1.0 (/ (- search-dist closest-dist)
-                                       search-dist)))
-                 (local-force-y (* (- obstacle-r (abs obstacle-local-y))
-                                   (if (> obstacle-local-y 0) 1 -1)
+                 (multiplier (* 10 (+ 1.0 (/ (- search-dist closest-dist)
+                                             search-dist))))
+                 (local-force-y (* (- (+ obstacle-r vehicle-width)
+                                      (abs obstacle-local-y))
+                                   (if (> obstacle-local-y 0) -1 1)
                                    multiplier))
                  (local-force-x (* (- obstacle-r closest-dist) breaking-weight)))
             (transformf-point (make-point-2d :x local-force-x :y local-force-y)
-                              vehicle-point))
+                              (make-point-2d :angle (point-2d-angle vehicle-point))))
           (make-vector-2d)))))
 
 ;; interpose
