@@ -13,7 +13,8 @@
            :set-pursuit-target
            :set-avoid-obstacle
            :set-interpose
-           :set-hide)
+           :set-hide
+           :set-follow-path)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-heading
@@ -107,6 +108,15 @@
 (defun.ps+ set-hide (steering &key enemy-vehicle)
   (register-force-calculator :hide steering
                              (init-hide enemy-vehicle)))
+
+(defun.ps+ set-follow-path (steering &key
+                                     path
+                                     (loop-p t)
+                                     (waypoint-seek-dist #lx30))
+  (register-force-calculator :follow-path steering
+                             (init-follow-path path
+                                               :loop-p loop-p
+                                               :waypoint-seek-dist waypoint-seek-dist)))
 
 ;; TODO: functions to disable each behavior
 
@@ -265,6 +275,39 @@
           (arrive vehicle-cmp vehicle-point best-hiding-spot
                   :diceleration 0.1)
           (make-point-2d)))))
+
+;; follow path
+
+(defun.ps+ init-follow-path (path &key
+                                  (loop-p t)
+                                  waypoint-seek-dist)
+  (assert (and path (nth 0 path)))
+  (assert (and waypoint-seek-dist (> waypoint-seek-dist 0)))
+  (let ((current-index 0)
+        (waypoint-seek-dist-p2 (* waypoint-seek-dist waypoint-seek-dist)))
+    (lambda (vehicle-cmp vehicle-point)
+      (labels ((get-current-waypoint ()
+                 (nth current-index path))
+               (last-waypoint-p ()
+                 (and (not loop-p)
+                      (= current-index (1- (length path)))))
+               (goto-next-wayponit-p ()
+                 (and (not (last-waypoint-p))
+                      (< (calc-dist-p2 vehicle-point (get-current-waypoint))
+                         waypoint-seek-dist-p2)))
+               (set-next-waypoint ()
+                 (let ((path-count (length path)))
+                   (setf current-index
+                         (if loop-p
+                             (mod (1+ current-index) path-count)
+                             (1+ current-index)))
+                   (assert (< current-index path-count)))))
+        (when (goto-next-wayponit-p)
+          (set-next-waypoint))
+        (if (not (last-waypoint-p))
+            (seek vehicle-cmp vehicle-point (get-current-waypoint))
+            (arrive vehicle-cmp vehicle-point (get-current-waypoint)
+                    :diceleration 0.1))))))
 
 ;; --- aux --- ;;
 
