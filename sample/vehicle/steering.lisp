@@ -12,7 +12,8 @@
            :set-wander-behavior
            :set-pursuit-target
            :set-avoid-obstacle
-           :set-interpose)
+           :set-interpose
+           :set-hide)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-heading
@@ -102,6 +103,10 @@
   (register-force-calculator :interpose steering
                              (init-interpose :target1 target-vehicle1
                                              :target2 target-vehicle2)))
+
+(defun.ps+ set-hide (steering &key enemy-vehicle)
+  (register-force-calculator :hide steering
+                             (init-hide enemy-vehicle)))
 
 ;; TODO: functions to disable each behavior
 
@@ -231,6 +236,35 @@
                       (calc-mid-point (estimate-future-point pnt1 cmp1)
                                       (estimate-future-point pnt2 cmp2))
                       :diceleration 0.1))))))))
+
+;; hide
+
+(defun.ps+ get-hiding-position (enemy-point obstacle-r obstacle-point
+                                              &key (dist-from-obstacle #lx30))
+  (let ((dist-away (+ obstacle-r dist-from-obstacle))
+        (to-obstacle (sub-vector-2d obstacle-point enemy-point)))
+    (setf-vector-2d-abs to-obstacle dist-away)
+    (add-vector-2d obstacle-point to-obstacle)))
+
+(defun.ps+ init-hide (enemy-vehicle)
+  (lambda (vehicle-cmp vehicle-point)
+    (let (dist-to-closest
+          best-hiding-spot
+          (enemy-point (calc-global-point enemy-vehicle)))
+      (do-vehicle-obstacle (ob)
+        (let* ((hiding-spot (get-hiding-position
+                             enemy-point
+                             (get-obstacle-r ob)
+                             (calc-global-point ob)))
+               (dist (calc-dist-p2 hiding-spot vehicle-point)))
+          (when (or (not dist-to-closest)
+                    (< dist dist-to-closest))
+            (setf dist-to-closest dist
+                  best-hiding-spot hiding-spot))))
+      (if dist-to-closest
+          (arrive vehicle-cmp vehicle-point best-hiding-spot
+                  :diceleration 0.1)
+          (make-point-2d)))))
 
 ;; --- aux --- ;;
 

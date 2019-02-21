@@ -20,7 +20,8 @@
                 :set-wander-behavior
                 :set-pursuit-target
                 :set-avoid-obstacle
-                :set-interpose)
+                :set-interpose
+                :set-hide)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state-manager
                 :init-test-state-manager
                 :register-test-state
@@ -36,7 +37,7 @@
 
 (defun.ps+ register-all-test-states (test-state-manager)
   (dolist (mode (list :seek :flee :arrive
-                      :pursuit :wander :avoid-obstacle :interpose))
+                      :pursuit :wander :avoid-obstacle :interpose :hide))
     (register-test-state test-state-manager mode
                          (lambda () (make-tester-state mode)))))
 
@@ -46,7 +47,8 @@
     (:pursuit (make-pursuit-state))
     (:wander (make-wander-state))
     (:avoid-obstacle (make-avoid-obstacle-state))
-    (:interpose (make-interpose-state))))
+    (:interpose (make-interpose-state))
+    (:hide (make-hide-state))))
 
 (defun.ps+ make-test-vehicle (&key (first-x #lx500)
                                    (first-y #ly500)
@@ -186,11 +188,10 @@
 
 ;; --- avoid obstacle --- ;;
 
-(defun.ps+ init-obstacles (&key (num 15) (min-r #lx40) (max-r #lx80))
+(defun.ps+ init-obstacles (&key (num 15) (min-r #lx40) (max-r #lx80)
+                                (min-dist #lx20) (margin #lx30))
   (let ((obstacles (list))
-        (max-trial 30)
-        (min-dist #lx20)
-        (margin #lx30))
+        (max-trial 30))
     (labels ((overlap-p (r x y)
                (dolist (old obstacles)
                  (let ((old-x (getf old :x))
@@ -231,6 +232,30 @@
       (add-ecs-component model vehicle)
       (set-entity-param vehicle :search-dist-model model))))
 
+(defun.ps+ make-wander-avoiding-vehicle (&key (display-search-dist nil))
+  (let* ((vehicle (make-wander-vehicle :display-wander-circle-p nil))
+         (steering (get-ecs-component 'steering vehicle))
+         (vehicle-width #lx20)
+         (min-search-dist #lx50)
+         (max-search-dist #lx100))
+    (when display-search-dist
+      (add-ecs-component-list
+       vehicle
+       (make-script-2d
+        :func (lambda (entity)
+                (update-search-dist-model
+                 entity
+                 vehicle-width min-search-dist max-search-dist)))
+       (init-entity-params :search-dist-model nil)))
+    (setf-with (get-ecs-component 'vehicle-component vehicle)
+      max-speed #lx2
+      max-force #lx0.08)
+    (set-avoid-obstacle steering
+                        :vehicle-width vehicle-width
+                        :min-search-dist min-search-dist
+                        :max-search-dist max-search-dist)
+    vehicle))
+
 (defstruct.ps+
     (avoid-obstacle-state
      (:include vehicle-tester-state
@@ -239,27 +264,8 @@
                   (add-ecs-entity parent)
                   (with-ecs-entity-parent (parent)
                     (init-obstacles)
-                    (let* ((vehicle (make-wander-vehicle :display-wander-circle-p nil))
-                           (steering (get-ecs-component 'steering vehicle))
-                           (vehicle-width #lx20)
-                           (min-search-dist #lx50)
-                           (max-search-dist #lx100))
-                      (add-ecs-component-list
-                       vehicle
-                       (make-script-2d
-                        :func (lambda (entity)
-                                (update-search-dist-model
-                                 entity
-                                 vehicle-width min-search-dist max-search-dist)))
-                       (init-entity-params :search-dist-model nil))
-                      (setf-with (get-ecs-component 'vehicle-component vehicle)
-                        max-speed #lx2
-                        max-force #lx0.08)
-                      (set-avoid-obstacle steering
-                                          :vehicle-width vehicle-width
-                                          :min-search-dist min-search-dist
-                                          :max-search-dist max-search-dist)
-                      (add-ecs-entity vehicle)))
+                    (add-ecs-entity (make-wander-avoiding-vehicle
+                                     :display-search-dist t)))
                   t)))))
 
 ;; interpose
@@ -282,6 +288,40 @@
                       (add-ecs-component-list
                        vehicle)
                       (add-ecs-entity vehicle)))
+                  t)))))
+
+;; hide
+
+(defun.ps+ make-hiding-vehicle (&key enemy-vehicle)
+  (let* ((vehicle (make-test-vehicle :color #x00ffff))
+         (steering (get-ecs-component 'steering vehicle))
+         (vehicle-width #lx20)
+         (min-search-dist #lx30)
+         (max-search-dist #lx50))
+    (setf-with (get-ecs-component 'vehicle-component vehicle)
+      max-speed #lx2
+      max-force #lx0.08)
+    (set-avoid-obstacle steering
+                        :vehicle-width vehicle-width
+                        :min-search-dist min-search-dist
+                        :max-search-dist max-search-dist)
+    (set-hide steering :enemy-vehicle enemy-vehicle)
+    vehicle))
+
+(defstruct.ps+
+    (hide-state
+     (:include vehicle-tester-state
+               (start-process
+                (state-lambda (parent)
+                  (add-ecs-entity parent)
+                  (with-ecs-entity-parent (parent)
+                    (init-obstacles :num 7
+                                    :min-dist #lx60
+                                    :margin #lx80)
+                    (let* ((enemy (make-wander-avoiding-vehicle))
+                           (hider (make-hiding-vehicle :enemy-vehicle enemy)))
+                      (add-ecs-entity enemy)
+                      (add-ecs-entity hider)))
                   t)))))
 
 ;; --- utils --- ;;
