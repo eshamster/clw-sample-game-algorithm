@@ -11,6 +11,10 @@ This includes the following samples.
         - Lagrange interpolation
         - B-Spline
         - Bezier (implemented as subset of B-Spline)
+- vehicle
+    - Some vehicle behaviors
+        - They are based on the book "実例で学ぶAIプログラミング" (translated from "Programming Game AI by Example" (Mat Buckland))
+
 
 ## Usage
 
