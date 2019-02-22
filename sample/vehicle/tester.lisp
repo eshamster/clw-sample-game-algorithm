@@ -103,13 +103,13 @@
                        vehicle
                        (make-script-2d
                         :func (lambda (entity)
-                                (declare (ignore entity))
                                 (let ((steering (get-ecs-component 'steering vehicle))
                                       (target-point (get-ecs-component 'point-2d target)))
                                   (ecase mode
                                     (:seek (set-seek-point steering target-point))
                                     (:flee (set-flee-point steering target-point))
-                                    (:arrive (set-arrive-point steering target-point)))))))
+                                    (:arrive (set-arrive-point steering target-point))))
+                                (warp-when-over-edge entity))))
                       (add-ecs-entity vehicle)))))))
     mode ; :seek, :flee or :arrive
   )
@@ -169,11 +169,7 @@
                            :wander-dist wander-dist)
       (add-ecs-component-list
        vehicle
-       (make-script-2d :func (lambda (entity)
-                               (with-ecs-components (point-2d) entity
-                                 (setf-with point-2d
-                                   x (mod x #lx1000)
-                                   y (mod y #ly1000))))))
+       (make-script-2d :func #'warp-when-over-edge))
       (when display-wander-circle-p
         (add-ecs-component-list
          vehicle
@@ -447,3 +443,9 @@
 
 (defun.ps+ get-steering (entity)
   (get-ecs-component 'steering entity))
+
+(defun.ps+ warp-when-over-edge (entity)
+  (with-ecs-components (point-2d) entity
+    (setf-with point-2d
+      x (mod x #lx1000)
+      y (mod y #ly1000))))
