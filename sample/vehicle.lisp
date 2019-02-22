@@ -12,6 +12,7 @@
 (clw-sample-game-algorithm/utils:use-this-package-as-sample)
 
 (defun.ps+ init-func (scene)
+  (load-font "../_js/")
   (init-default-systems :scene scene)
   (init-vehicle-system)
   (init-input)
