@@ -46,7 +46,7 @@
 
 (defun.ps+ make-tester-state (mode)
   (ecase mode
-    ((:seek :flee :arrive) (make-seek-or-flee-state :mode mode))
+    ((:seek :flee :arrive) (make-basic-behavior-state :mode mode))
     (:pursuit (make-pursuit-state))
     (:wander (make-wander-state))
     (:avoid-obstacle (make-avoid-obstacle-state))
@@ -85,12 +85,10 @@
                      (lambda () (delete-ecs-entity parent))))))))
     (parent (make-ecs-entity)))
 
-;; --- seek, flee or arrive --- ;;
-
-;; TODO: Rename state
+;; --- basic behaviors: seek, flee or arrive --- ;;
 
 (defstruct.ps+
-    (seek-or-flee-state
+    (basic-behavior-state
      (:include vehicle-tester-state
                (start-process
                 (state-lambda (mode parent)
