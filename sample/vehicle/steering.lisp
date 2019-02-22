@@ -20,7 +20,8 @@
                 :vehicle-component-heading
                 :vehicle-component-velocity
                 :vehicle-component-max-force
-                :vehicle-component-max-speed)
+                :vehicle-component-max-speed
+                :vehicle-component-speed)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/obstacle
                 :do-vehicle-obstacle
                 :calc-intersect-distance
@@ -194,7 +195,7 @@
   (lambda (vehicle-cmp vehicle-point)
     (let ((search-dist (lerp-scalar min-search-dist
                                     max-search-dist
-                                    (/ (vector-2d-abs (vehicle-component-velocity vehicle-cmp))
+                                    (/ (vehicle-component-speed vehicle-cmp)
                                        (vehicle-component-max-speed vehicle-cmp))))
           (closest-obstacle nil)
           (closest-dist nil))

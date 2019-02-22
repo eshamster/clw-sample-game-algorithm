@@ -14,7 +14,9 @@
            :vehicle-component-mass
            :vehicle-component-max-speed
            :vehicle-component-max-force
-           :vehicle-component-max-turn-rate))
+           :vehicle-component-max-turn-rate
+           ;; utils
+           :vehicle-component-speed))
 (in-package :clw-sample-game-algorithm/sample/vehicle/component)
 
 (defstruct.ps+ (vehicle-component (:include ecs-component))
@@ -36,3 +38,8 @@
      :max-speed max-speed
      :max-force max-force
      :max-turn-rate max-turn-rate)))
+
+;; --- utils --- ;;
+
+(defun.ps+ vehicle-component-speed (vehicle-component)
+  (vector-2d-abs (vehicle-component-velocity vehicle-component)))
