@@ -22,7 +22,8 @@
                 :set-avoid-obstacle
                 :set-interpose
                 :set-hide
-                :set-follow-path)
+                :set-follow-path
+                :set-offset-pursuit)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state-manager
                 :init-test-state-manager
                 :register-test-state
@@ -38,7 +39,8 @@
 
 (defun.ps+ register-all-test-states (test-state-manager)
   (dolist (mode (list :seek :flee :arrive
-                      :pursuit :wander :avoid-obstacle :interpose :hide :follow-path))
+                      :pursuit :wander :avoid-obstacle :interpose
+                      :hide :follow-path :offset-pursuit))
     (register-test-state test-state-manager mode
                          (lambda () (make-tester-state mode)))))
 
@@ -50,13 +52,15 @@
     (:avoid-obstacle (make-avoid-obstacle-state))
     (:interpose (make-interpose-state))
     (:hide (make-hide-state))
-    (:follow-path (make-follow-path-state))))
+    (:follow-path (make-follow-path-state))
+    (:offset-pursuit (make-offset-pursuit-state))))
 
 (defun.ps+ make-test-vehicle (&key (first-x #lx500)
                                    (first-y #ly500)
-                                   (color #xffffff))
+                                   (color #xffffff)
+                                   (scale 1))
   (let* ((vehicle (make-ecs-entity))
-         (width #lx30)
+         (width (* #lx30 scale))
          (height (/ width 2)))
     (add-entity-tag vehicle :vehicle)
     (add-ecs-component-list
@@ -385,6 +389,36 @@
                                          :loop-p loop-p))))
                   t)))))
 
+;; offset pursuit
+
+(defstruct.ps+
+    (offset-pursuit-state
+     (:include vehicle-tester-state
+               (start-process
+                (state-lambda (parent)
+                  (add-ecs-entity parent)
+                  (with-ecs-entity-parent (parent)
+                    (let ((target (make-target-entity))
+                          (leader (make-test-vehicle :scale 1.2)))
+                      (add-ecs-entity target)
+                      ;; leader
+                      (add-ecs-component-list
+                       leader
+                       (make-script-2d :func (lambda (entity)
+                                               (set-arrive-point
+                                                (get-steering entity)
+                                                (calc-global-point target)))))
+                      (add-ecs-entity leader)
+                      ;; formation
+                      (dolist (offset (list (make-vector-2d :x #lx-40 :y #lx50)
+                                            (make-vector-2d :x #lx-40 :y #lx-50)
+                                            (make-vector-2d :x #lx-70 :y 0)))
+                        (let ((member (make-test-vehicle :scale 0.8)))
+                          (set-offset-pursuit (get-steering member)
+                                              :leader leader :offset offset)
+                          (add-ecs-entity member)))))
+                  t)))))
+
 ;; --- utils --- ;;
 
 ;; Note: (ps (random))     -> Math.random()
@@ -410,3 +444,6 @@
                                    x (get-mouse-x)
                                    y (get-mouse-y)))))))
     target))
+
+(defun.ps+ get-steering (entity)
+  (get-ecs-component 'steering entity))

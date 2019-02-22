@@ -14,7 +14,8 @@
            :set-avoid-obstacle
            :set-interpose
            :set-hide
-           :set-follow-path)
+           :set-follow-path
+           :set-offset-pursuit)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-heading
@@ -119,6 +120,12 @@
                                                :loop-p loop-p
                                                :waypoint-seek-dist waypoint-seek-dist)))
 
+(defun.ps+ set-offset-pursuit (steering &key leader offset)
+  (check-type leader ecs-entity)
+  (check-type offset vector-2d)
+  (register-force-calculator :offset-pursuit steering
+                             (init-offset-pursuit leader offset)))
+
 ;; TODO: functions to disable each behavior
 
 ;; --- behavior --- ;;
@@ -136,7 +143,7 @@
         force
         (make-vector-2d))))
 
-(defun.ps+ arrive (vehicle-cmp vehicle-point target-point &key diceleration)
+(defun.ps+ arrive (vehicle-cmp vehicle-point target-point &key (diceleration 0.1))
   (assert (and diceleration (> diceleration 0)))
   (let ((dist (calc-dist target-point vehicle-point)))
     (if (> dist 0)
@@ -309,6 +316,26 @@
             (seek vehicle-cmp vehicle-point (get-current-waypoint))
             (arrive vehicle-cmp vehicle-point (get-current-waypoint)
                     :diceleration 0.1))))))
+
+;; offset pursuit
+
+(defun.ps+ init-offset-pursuit (leader offset)
+  (lambda (vehicle-cmp vehicle-point)
+    (let* ((global-offset (transformf-point
+                           (make-point-2d :x (vector-2d-x offset)
+                                          :y (vector-2d-y offset))
+                           (calc-global-point leader)))
+           (to-offset (sub-vector-2d vehicle-point global-offset))
+           (leader-velocity (vehicle-component-velocity
+                             (get-ecs-component 'vehicle-component leader)))
+           (look-ahead-time
+            (/ (vector-2d-abs to-offset)
+               (+ (vehicle-component-max-speed vehicle-cmp)
+                  (vector-2d-abs leader-velocity)))))
+      (arrive vehicle-cmp vehicle-point
+              (add-vector-2d global-offset
+                             (*-vec-scalar leader-velocity
+                                           look-ahead-time))))))
 
 ;; --- aux --- ;;
 
