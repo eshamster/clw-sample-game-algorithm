@@ -12,8 +12,17 @@
                 :def-test-state
                 :make-test-vehicle
                 :make-target-entity
-                :warp-when-over-edge))
+                :warp-when-over-edge)
+  (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state/utils-panel
+                :add-changing-max-speed-panel
+                :add-changing-max-force-panel)
+  (:import-from :ps-experiment/common-macros
+                :setf-with))
 (in-package :clw-sample-game-algorithm/sample/vehicle/test-state/basic-behaviors)
+
+(defun.ps+ init-control-panel (vehicle)
+  (add-changing-max-speed-panel vehicle)
+  (add-changing-max-force-panel vehicle))
 
 (def-test-state basic-behavior-state (mode) ; :seek, :flee or :arrive
   :start-process
@@ -32,7 +41,8 @@
                     (:flee (set-flee-point steering target-point))
                     (:arrive (set-arrive-point steering target-point))))
                 (warp-when-over-edge entity))))
-      (add-ecs-entity vehicle)))
+      (add-ecs-entity vehicle)
+      (init-control-panel vehicle)))
 
   :register-name-initializer-pairs
   ((:seek (make-basic-behavior-state :mode :seek))

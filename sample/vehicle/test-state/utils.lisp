@@ -84,7 +84,8 @@
                                      `(funcall ,end-process ,state)))
                                 (when (find-the-entity ,parent)
                                   (register-next-frame-func
-                                   (lambda () (delete-ecs-entity ,parent)))))
+                                   (lambda () (delete-ecs-entity ,parent))))
+                                (clear-gui-panel))
                               t))))
                 ,@slots)
             (defun.ps+ ,(intern "REGISTER-THIS-TEST-STATE" *package*) ()

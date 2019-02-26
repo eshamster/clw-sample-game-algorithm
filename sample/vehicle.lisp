@@ -16,6 +16,7 @@
   (init-default-systems :scene scene)
   (init-vehicle-system)
   (init-input)
+  (init-gui)
   (init-vehicle-tester))
 
 (defun.ps+ update-func ()
