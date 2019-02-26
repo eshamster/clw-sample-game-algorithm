@@ -17,7 +17,8 @@
    :warp-when-over-edge
    :get-steering
    :get-test-state-manager
-   :random1)
+   :random1
+   :update-wander-param)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-max-speed
@@ -120,25 +121,70 @@
                             :color color)))
     vehicle))
 
-(defun.ps+ make-wander-vehicle (&key (display-wander-circle-p t))
-  (let ((vehicle (make-test-vehicle))
-        (wander-radius #lx20)
-        (wander-dist #lx60))
+(defun.ps+ make-wander-vehicle (&key (display-wander-circle-p t)
+                                     (wander-radius #lx20)
+                                     (wander-dist #lx60)
+                                     (wander-jitter #lx3))
+  (let ((vehicle (make-test-vehicle)))
+    (add-entity-tag vehicle :wander-vehicle)
     (with-ecs-components (steering) vehicle
       (set-wander-behavior steering
                            :wander-radius wander-radius
-                           :wander-dist wander-dist)
+                           :wander-dist wander-dist
+                           :wander-jitter wander-jitter)
       (add-ecs-component-list
        vehicle
-       (make-script-2d :func #'warp-when-over-edge))
+       (make-script-2d :func #'warp-when-over-edge)
+       (init-entity-params
+        :display-wander-circle-p display-wander-circle-p
+        :wander-radius wander-radius
+        :wander-dist wander-dist
+        :wander-jitter wander-jitter))
       (when display-wander-circle-p
-        (add-ecs-component-list
-         vehicle
-         (make-model-2d :model (make-wired-circle :r wander-radius
-                                                  :color #x888888)
-                        :offset (make-point-2d :x wander-dist)
-                        :depth 100))))
+        (let ((wander-circle-model
+               (make-wander-circle-model :wander-radius wander-radius
+                                         :wander-dist wander-dist)))
+          (add-ecs-component-list vehicle wander-circle-model)
+          (set-entity-param vehicle
+                            :wander-circle-model wander-circle-model))))
     vehicle))
+
+(defun.ps+ make-wander-circle-model (&key wander-radius wander-dist)
+  (make-model-2d :model (make-wired-circle :r wander-radius
+                                           :color #x888888)
+                 :offset (make-point-2d :x wander-dist)
+                 :depth 100))
+
+(defun.ps+ update-wander-param (wander-vehicle
+                                &key wander-radius wander-dist wander-jitter)
+  (check-entity-tags wander-vehicle :wander-vehicle)
+  ;; params
+  (flet ((update-a-param (key value)
+           (when value
+             (set-entity-param wander-vehicle key value))))
+    (update-a-param :wander-radius wander-radius)
+    (update-a-param :wander-dist wander-dist)
+    (update-a-param :wander-jitter wander-jitter))
+  (let ((radius (get-entity-param wander-vehicle :wander-radius))
+        (dist (get-entity-param wander-vehicle :wander-dist))
+        (jitter (get-entity-param wander-vehicle :wander-jitter)))
+    (let ((steering (get-ecs-component 'steering wander-vehicle)))
+      (set-wander-behavior steering
+                           :wander-radius radius
+                           :wander-dist dist
+                           :wander-jitter jitter))
+    ;; model
+    (when (get-entity-param wander-vehicle :display-wander-circle-p)
+      (let ((old-model (get-entity-param wander-vehicle :wander-circle-model))
+            (new-model
+             (make-wander-circle-model :wander-radius radius
+                                       :wander-dist dist)))
+        (assert old-model)
+        (register-next-frame-func
+         (lambda ()
+           (delete-ecs-component old-model wander-vehicle)
+           (add-ecs-component-list wander-vehicle new-model)))
+        (set-entity-param wander-vehicle :wander-circle-model new-model)))))
 
 (defun.ps+ make-wander-avoiding-vehicle (&key (display-search-dist nil))
   (let* ((vehicle (make-wander-vehicle :display-wander-circle-p nil))
