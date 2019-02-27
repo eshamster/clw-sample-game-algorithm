@@ -11,17 +11,19 @@
                 :setf-with))
 (in-package :clw-sample-game-algorithm/sample/vehicle/test-state/utils-panel)
 
-(defun.ps+ add-changing-max-speed-panel (vehicle)
+(defun.ps+ add-changing-max-speed-panel (vehicle
+                                         &key (init-value #lx5))
   (add-panel-number
-   "Max Speed" #lx5
+   "Max Speed" init-value
    :min #lx1 :max #lx15 :step #lx0.5
    :on-change (lambda (value)
                 (setf-with (get-component vehicle)
                   max-speed value))))
 
-(defun.ps+ add-changing-max-force-panel (vehicle)
+(defun.ps+ add-changing-max-force-panel (vehicle
+                                         &key (init-value #lx0.5))
   (add-panel-number
-   "Max Force" #lx0.5
+   "Max Force" init-value
    :min #lx0.1 :max #lx1.5 :step #lx0.05
    :on-change (lambda (value)
                 (setf-with (get-component vehicle)

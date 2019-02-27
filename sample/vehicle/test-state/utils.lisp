@@ -18,7 +18,8 @@
    :get-steering
    :get-test-state-manager
    :random1
-   :update-wander-param)
+   :update-wander-param
+   :update-avoiding-obstacle-param)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-max-speed
@@ -186,12 +187,18 @@
            (add-ecs-component-list wander-vehicle new-model)))
         (set-entity-param wander-vehicle :wander-circle-model new-model)))))
 
-(defun.ps+ make-wander-avoiding-vehicle (&key (display-search-dist nil))
+(defun.ps+ make-wander-avoiding-vehicle (&key (display-search-dist nil)
+                                              (vehicle-width #lx20)
+                                              (min-search-dist #lx50)
+                                              (max-search-dist #lx100))
   (let* ((vehicle (make-wander-vehicle :display-wander-circle-p nil))
-         (steering (get-ecs-component 'steering vehicle))
-         (vehicle-width #lx20)
-         (min-search-dist #lx50)
-         (max-search-dist #lx100))
+         (steering (get-ecs-component 'steering vehicle)))
+    (add-entity-tag vehicle :avoid-obstacle)
+    (add-ecs-component-list
+     vehicle
+     (init-entity-params :vehicle-width vehicle-width
+                         :min-search-dist min-search-dist
+                         :max-search-dist max-search-dist))
     (when display-search-dist
       (add-ecs-component-list
        vehicle
@@ -199,16 +206,32 @@
         :func (lambda (entity)
                 (update-search-dist-model
                  entity
-                 vehicle-width min-search-dist max-search-dist)))
-       (init-entity-params :search-dist-model nil)))
+                 (get-entity-param entity :vehicle-width)
+                 (get-entity-param entity :min-search-dist)
+                 (get-entity-param entity :max-search-dist))))))
     (setf-with (get-ecs-component 'vehicle-component vehicle)
       max-speed #lx2
-      max-force #lx0.08)
-    (set-avoid-obstacle steering
-                        :vehicle-width vehicle-width
-                        :min-search-dist min-search-dist
-                        :max-search-dist max-search-dist)
+      max-force #lx0.1)
+    (update-avoiding-obstacle-using-param vehicle)
     vehicle))
+
+(defun.ps+ update-avoiding-obstacle-param (vehicle
+                                           &key vehicle-width min-search-dist max-search-dist)
+  (check-entity-tags vehicle :avoid-obstacle)
+  (flet ((update-a-param (key value)
+           (when value
+             (set-entity-param vehicle key value))))
+    (update-a-param :vehicle-width vehicle-width)
+    (update-a-param :min-search-dist min-search-dist)
+    (update-a-param :max-search-dist max-search-dist))
+  (update-avoiding-obstacle-using-param vehicle))
+
+(defun.ps+ update-avoiding-obstacle-using-param (vehicle)
+  (check-entity-tags vehicle :avoid-obstacle)
+  (set-avoid-obstacle (get-ecs-component 'steering vehicle)
+                      :vehicle-width (get-entity-param vehicle :vehicle-width)
+                      :min-search-dist (get-entity-param vehicle :min-search-dist)
+                      :max-search-dist (get-entity-param vehicle :max-search-dist)))
 
 (defun.ps+ update-search-dist-model (vehicle vehicle-width min-search-dist max-search-dist)
   (with-ecs-components (vehicle-component) vehicle
