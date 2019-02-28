@@ -11,8 +11,31 @@
   (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state/utils
                 :def-test-state
                 :make-test-vehicle
-                :random1))
+                :random1)
+  (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state/utils-panel
+                :add-changing-max-speed-panel
+                :add-changing-max-force-panel))
 (in-package :clw-sample-game-algorithm/sample/vehicle/test-state/follow-path)
+
+(defvar.ps+ *default-waypoint-seek-dist* #lx30)
+
+(defun.ps+ add-changing-seek-dist-panel (vehicle)
+  (add-panel-number
+   "Seek Dist" *default-waypoint-seek-dist*
+   :min #lx5 :max #lx90 :step #lx10
+   :on-change (lambda (seek-dist)
+                ;; TODO: Don't reset path
+                (set-follow-path
+                 (get-ecs-component 'steering vehicle)
+                 :path (get-entity-param vehicle :path)
+                 :loop-p (get-entity-param vehicle :loop-p)
+                 :waypoint-seek-dist seek-dist)
+                (update-seek-dist-circle vehicle seek-dist))))
+
+(defun.ps+ init-control-panel (vehicle)
+  (add-changing-max-speed-panel vehicle)
+  (add-changing-max-force-panel vehicle)
+  (add-changing-seek-dist-panel vehicle))
 
 (defun.ps+ init-path (&key num-waypoint (loop-p t))
   (assert (and num-waypoint (> num-waypoint 0)))
@@ -49,6 +72,19 @@
                                          waypoints)))
       (add-ecs-entity path-entity))))
 
+(defun.ps+ update-seek-dist-circle (vehicle seek-dist &optional (init-p nil))
+  (let ((old-model (get-entity-param vehicle :seek-dist-circle-model))
+        (new-model (make-model-2d
+                    :model (make-wired-circle :r seek-dist :color #x888888))))
+    (set-entity-param vehicle :seek-dist-circle-model nil)
+    (register-next-frame-func
+     (lambda ()
+       (when old-model
+         (delete-ecs-component old-model vehicle))
+       (when (or init-p old-model)
+         (add-ecs-component new-model vehicle)
+         (set-entity-param vehicle :seek-dist-circle-model new-model))))))
+
 (defun.ps+ search-path ()
   (let ((entity (find-a-entity-by-tag :path)))
     (assert entity)
@@ -60,11 +96,19 @@
     (let ((loop-p t))
       (init-path :num-waypoint 5
                  :loop-p loop-p)
-      (let ((vehicle (make-test-vehicle)))
+      (let ((vehicle (make-test-vehicle))
+            (path (search-path)))
         (add-ecs-entity vehicle)
+        (add-ecs-component-list
+         vehicle
+         (init-entity-params :path path
+                             :loop-p loop-p))
         (set-follow-path (get-ecs-component 'steering vehicle)
-                         :path (search-path)
-                         :loop-p loop-p))))
+                         :path path
+                         :loop-p loop-p
+                         :waypoint-seek-dist *default-waypoint-seek-dist*)
+        (update-seek-dist-circle vehicle *default-waypoint-seek-dist* t)
+        (init-control-panel vehicle))))
 
   :register-name-initializer-pairs
   ((:follow-path (make-follow-path-state))))
