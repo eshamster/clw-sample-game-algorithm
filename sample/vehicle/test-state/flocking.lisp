@@ -4,7 +4,8 @@
         :cl-ps-ecs
         :cl-web-2d-game)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/group-behavior
-                :set-group-alignment)
+                :set-group-alignment
+                :set-group-cohesion)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/steering
                 :steering)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state/utils
@@ -21,6 +22,7 @@
 (defvar.ps+ *vehicle-search-dist* #lx50)
 
 (defvar.ps+ *default-alignment-weight* 75)
+(defvar.ps+ *default-cohesion-weight* 20)
 
 (defvar.ps+ *wander-radius* #lx15)
 (defvar.ps+ *wander-dist* #lx45)
@@ -57,12 +59,17 @@
                             vehicles)))
                 (dolist (pair pairs)
                   (with-slots (vehicle) pair
-                    (set-group-alignment
-                     (get-ecs-component 'steering vehicle)
-                     :neighbors
-                     (find-neighbors pair pairs
-                                     *vehicle-search-dist*)
-                     :weight *default-alignment-weight*)))))))
+                    (let ((steering (get-ecs-component 'steering vehicle))
+                          (neighbors (find-neighbors pair pairs
+                                                     *vehicle-search-dist*)))
+                      (set-group-alignment
+                       steering
+                       :neighbors neighbors
+                       :weight *default-alignment-weight*)
+                      (set-group-cohesion
+                       steering
+                       :neighbors neighbors
+                       :weight *default-cohesion-weight*))))))))
     updater))
 
 (def-test-state flocking-state ()
