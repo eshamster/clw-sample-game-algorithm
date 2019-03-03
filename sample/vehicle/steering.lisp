@@ -15,7 +15,9 @@
            :set-interpose
            :set-hide
            :set-follow-path
-           :set-offset-pursuit)
+           :set-offset-pursuit
+           ;; internal
+           :register-force-calculator)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-heading

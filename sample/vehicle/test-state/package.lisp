@@ -11,7 +11,8 @@
         :clw-sample-game-algorithm/sample/vehicle/test-state/interpose
         :clw-sample-game-algorithm/sample/vehicle/test-state/hide
         :clw-sample-game-algorithm/sample/vehicle/test-state/follow-path
-        :clw-sample-game-algorithm/sample/vehicle/test-state/offset-pursuit)
+        :clw-sample-game-algorithm/sample/vehicle/test-state/offset-pursuit
+        :clw-sample-game-algorithm/sample/vehicle/test-state/flocking)
   (:export :init-vehicle-test-state)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state/utils
                 :get-test-state-manager)
