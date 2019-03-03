@@ -15,7 +15,10 @@
            :set-interpose
            :set-hide
            :set-follow-path
-           :set-offset-pursuit)
+           :set-offset-pursuit
+           ;; for group behavior
+           :register-force-calculator
+           :seek)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
                 :vehicle-component-heading

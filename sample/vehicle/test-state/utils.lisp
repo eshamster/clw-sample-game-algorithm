@@ -125,8 +125,9 @@
 (defun.ps+ make-wander-vehicle (&key (display-wander-circle-p t)
                                      (wander-radius #lx20)
                                      (wander-dist #lx60)
-                                     (wander-jitter #lx3))
-  (let ((vehicle (make-test-vehicle)))
+                                     (wander-jitter #lx3)
+                                     (scale 1))
+  (let ((vehicle (make-test-vehicle :scale scale)))
     (add-entity-tag vehicle :wander-vehicle)
     (with-ecs-components (steering) vehicle
       (set-wander-behavior steering
