@@ -5,7 +5,8 @@
         :cl-web-2d-game)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/group-behavior
                 :set-group-alignment
-                :set-group-cohesion)
+                :set-group-cohesion
+                :set-group-separation)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/steering
                 :steering)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/test-state/utils
@@ -23,6 +24,7 @@
 
 (defvar.ps+ *default-alignment-weight* 75)
 (defvar.ps+ *default-cohesion-weight* 20)
+(defvar.ps+ *default-separation-weight* 10)
 
 (defvar.ps+ *wander-radius* #lx15)
 (defvar.ps+ *wander-dist* #lx45)
@@ -69,7 +71,11 @@
                       (set-group-cohesion
                        steering
                        :neighbors neighbors
-                       :weight *default-cohesion-weight*))))))))
+                       :weight *default-cohesion-weight*)
+                      (set-group-separation
+                       steering
+                       :neighbors neighbors
+                       :weight *default-separation-weight*))))))))
     updater))
 
 (def-test-state flocking-state ()
