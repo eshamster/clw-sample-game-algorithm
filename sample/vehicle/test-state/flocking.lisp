@@ -18,6 +18,8 @@
                 :setf-with))
 (in-package :clw-sample-game-algorithm/sample/vehicle/test-state/flocking)
 
+;; --- params --- ;;
+
 (defvar.ps+ *num-vehicle* 40)
 (defvar.ps+ *vehicle-scale* 0.6)
 (defvar.ps+ *vehicle-search-dist* #lx50)
@@ -28,6 +30,25 @@
 
 (defvar.ps+ *wander-radius* #lx15)
 (defvar.ps+ *wander-dist* #lx45)
+
+;; --- controler --- ;;
+
+(defun.ps+ add-changing-weight-panels (updater)
+  (flet ((add-panel (title key)
+           (add-panel-number
+            title (get-entity-param updater key)
+            :min 0 :max 100 :step 1
+            :on-change (lambda (value)
+                         (set-entity-param updater key value)))))
+    (add-panel "Alignment" :alignment-weight)
+    (add-panel "Cohesion" :cohesion-weight)
+    (add-panel "Separation" :separation-weight)))
+
+(defun.ps+ init-control-panel (updater)
+  (check-entity-tags updater :group-behavior-updater)
+  (add-changing-weight-panels updater))
+
+;; --- state and utils --- ;;
 
 (defstruct.ps+ vehicle-point-pair vehicle point)
 
@@ -48,11 +69,15 @@
 
 (defun.ps+ make-group-behavior-updater (vehicles)
   (let ((updater (make-ecs-entity)))
+    (add-entity-tag updater :group-behavior-updater)
     (add-ecs-component-list
      updater
+     (init-entity-params
+      :alignment-weight *default-alignment-weight*
+      :cohesion-weight *default-cohesion-weight*
+      :separation-weight *default-separation-weight*)
      (make-script-2d
       :func (lambda (entity)
-              (declare (ignore entity))
               (let ((pairs (mapcar
                             (lambda (vehicle)
                               (make-vehicle-point-pair
@@ -67,15 +92,15 @@
                       (set-group-alignment
                        steering
                        :neighbors neighbors
-                       :weight *default-alignment-weight*)
+                       :weight (get-entity-param entity :alignment-weight))
                       (set-group-cohesion
                        steering
                        :neighbors neighbors
-                       :weight *default-cohesion-weight*)
+                       :weight (get-entity-param entity :cohesion-weight))
                       (set-group-separation
                        steering
                        :neighbors neighbors
-                       :weight *default-separation-weight*))))))))
+                       :weight (get-entity-param entity :separation-weight)))))))))
     updater))
 
 (def-test-state flocking-state ()
@@ -94,8 +119,9 @@
           y (lerp-scalar 0 #ly1000 (random1))
           angle (lerp-scalar (* -1 PI) PI (random1)))
         (add-ecs-entity vehicle))
-      (add-ecs-entity
-       (make-group-behavior-updater vehicles))))
+      (let ((updater (make-group-behavior-updater vehicles)))
+        (init-control-panel updater)
+        (add-ecs-entity updater))))
 
   :register-name-initializer-pairs
   ((:flocking (make-flocking-state))))
