@@ -52,9 +52,9 @@
 
 (defstruct.ps+ vehicle-point-pair vehicle point)
 
-(defun.ps+ find-neighbors (target-vehicle-point-pair
-                           vehicle-point-pairs
-                           vehicle-search-dist)
+(defun.ps+ find-neighbor-points (target-vehicle-point-pair
+                                 vehicle-point-pairs
+                                 vehicle-search-dist)
   (with-slots ((target-vehicle vehicle)w (target-point point))
       target-vehicle-point-pair
     (let ((result (list)))
@@ -64,7 +64,7 @@
           (when (and (not (eq other-vehicle target-vehicle))
                      (< (calc-dist-p2 target-point other-point)
                         (* vehicle-search-dist vehicle-search-dist)))
-            (push other-vehicle result))))
+            (push other-point result))))
       result)))
 
 (defun.ps+ make-group-behavior-updater (vehicles)
@@ -87,19 +87,20 @@
                 (dolist (pair pairs)
                   (with-slots (vehicle) pair
                     (let ((steering (get-ecs-component 'steering vehicle))
-                          (neighbors (find-neighbors pair pairs
-                                                     *vehicle-search-dist*)))
+                          (neighbor-points
+                           (find-neighbor-points pair pairs
+                                                 *vehicle-search-dist*)))
                       (set-group-alignment
                        steering
-                       :neighbors neighbors
+                       :neighbor-points neighbor-points
                        :weight (get-entity-param entity :alignment-weight))
                       (set-group-cohesion
                        steering
-                       :neighbors neighbors
+                       :neighbor-points neighbor-points
                        :weight (get-entity-param entity :cohesion-weight))
                       (set-group-separation
                        steering
-                       :neighbors neighbors
+                       :neighbor-points neighbor-points
                        :weight (get-entity-param entity :separation-weight)))))))))
     updater))
 

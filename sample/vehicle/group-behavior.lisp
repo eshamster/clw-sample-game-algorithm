@@ -14,34 +14,33 @@
 ;; --- setters for each behavior --- ;;
 
 (defun.ps+ set-group-alignment (steering
-                                &key neighbors (weight 1))
+                                &key neighbor-points (weight 1))
   (register-force-calculator :group-alignment steering
-                             (init-alignment
-                              neighbors :weight weight)))
+                             (init-alignment neighbor-points
+                                             :weight weight)))
 
 (defun.ps+ set-group-cohesion (steering
-                               &key neighbors (weight 1))
+                               &key neighbor-points (weight 1))
   (register-force-calculator :group-cohesion steering
-                             (init-cohesion
-                              neighbors :weight weight)))
+                             (init-cohesion neighbor-points
+                                            :weight weight)))
 
 (defun.ps+ set-group-separation (steering
-                               &key neighbors (weight 1))
+                               &key neighbor-points (weight 1))
   (register-force-calculator :group-separation steering
-                             (init-separation
-                              neighbors :weight weight)))
+                             (init-separation neighbor-points
+                                              :weight weight)))
 
 ;; --- behavior --- ;;
 
-(defun.ps+ init-alignment (neighbors &key (weight 1))
+(defun.ps+ init-alignment (neighbor-points &key (weight 1))
   (lambda (vehicle-cmp vehicle-point)
     (declare (ignore vehicle-cmp))
-    (let ((num-neighbors (length neighbors)))
+    (let ((num-neighbors (length neighbor-points)))
       (if (> num-neighbors 0)
           (let ((sum-angle 0))
-            (dolist (neighbor-vehicle neighbors)
-              (incf sum-angle
-                    (point-2d-angle (calc-global-point neighbor-vehicle))))
+            (dolist (neighbor-point neighbor-points)
+              (incf sum-angle (point-2d-angle neighbor-point)))
             (let ((target-angle (/ sum-angle num-neighbors)))
               (*-vec-scalar
                (make-vector-2d :x (cos target-angle)
@@ -49,27 +48,27 @@
                weight)))
           (make-vector-2d)))))
 
-(defun.ps+ init-cohesion (neighbors &key (weight 1))
+(defun.ps+ init-cohesion (neighbor-points &key (weight 1))
   (lambda (vehicle-cmp vehicle-point)
-    (let ((num-neighbors (length neighbors)))
+    (let ((num-neighbors (length neighbor-points)))
       (if (> num-neighbors 0)
           (let ((sum-point (make-vector-2d)))
-            (dolist (neighbor-vehicle neighbors)
-              (incf-vector-2d sum-point (calc-global-point neighbor-vehicle)))
+            (dolist (neighbor-point neighbor-points)
+              (incf-vector-2d sum-point neighbor-point))
             (let ((seek-force (seek vehicle-cmp vehicle-point
                                     (/-vec-scalar sum-point num-neighbors))))
               (setf-vector-2d-abs seek-force weight)
               seek-force))
           (make-vector-2d)))))
 
-(defun.ps+ init-separation (neighbors &key (weight 1))
+(defun.ps+ init-separation (neighbor-points &key (weight 1))
   (lambda (vehicle-cmp vehicle-point)
     (declare (ignore vehicle-cmp))
-    (let ((num-neighbors (length neighbors)))
+    (let ((num-neighbors (length neighbor-points)))
       (if (> num-neighbors 0)
           (let ((force (make-vector-2d)))
-            (dolist (neighbor-vehicle neighbors)
-              (let* ((neighbor-point (calc-global-point neighbor-vehicle))
+            (dolist (neighbor-point neighbor-points)
+              (let* ((neighbor-point neighbor-point)
                      (to-agent (sub-vector-2d
                                 vehicle-point neighbor-point))
                      (dist (vector-2d-abs to-agent)))
