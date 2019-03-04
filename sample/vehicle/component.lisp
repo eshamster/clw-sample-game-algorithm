@@ -10,7 +10,6 @@
            :vehicle-component-registerp
            :vehicle-component-velocity
            :vehicle-component-heading
-           :vehicle-component-side
            :vehicle-component-mass
            :vehicle-component-max-speed
            :vehicle-component-max-force
@@ -20,7 +19,7 @@
 (in-package :clw-sample-game-algorithm/sample/vehicle/component)
 
 (defstruct.ps+ (vehicle-component (:include ecs-component))
-    velocity heading side mass max-speed max-force max-turn-rate)
+    velocity heading mass max-speed max-force max-turn-rate)
 
 (defun.ps+ init-vehicle-component (&key (angle 0)
                                         (mass 1)
@@ -32,8 +31,6 @@
     (make-vehicle-component
      :velocity (make-vector-2d)
      :heading heading
-     :side (make-vector-2d :x (vector-2d-y heading)
-                           :y (* -1 (vector-2d-x heading)))
      :mass mass
      :max-speed max-speed
      :max-force max-force
