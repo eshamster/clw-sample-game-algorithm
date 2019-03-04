@@ -21,7 +21,6 @@
            :seek)
   (:import-from :clw-sample-game-algorithm/sample/vehicle/component
                 :vehicle-component
-                :vehicle-component-heading
                 :vehicle-component-velocity
                 :vehicle-component-max-force
                 :vehicle-component-max-speed
@@ -158,12 +157,17 @@
                           (vehicle-component-velocity vehicle-cmp)))
         (make-vector-2d))))
 
+(defun.ps+ extract-heading-from-point-2d (point)
+  (let ((angle (point-2d-angle point)))
+    (make-vector-2d :x (cos angle)
+                    :y (sin angle))))
+
 (defun.ps+ calc-pursuit-point (vehicle-cmp vehicle-point evader-vehicle-cmp evader-point)
   (let* ((to-evader (sub-vector-2d evader-point vehicle-point))
-         (vehicle-heading (vehicle-component-heading vehicle-cmp))
+         (vehicle-heading (extract-heading-from-point-2d vehicle-point))
          (relative-heading (calc-inner-product
                             vehicle-heading
-                            (vehicle-component-heading evader-vehicle-cmp))))
+                            (extract-heading-from-point-2d evader-point))))
     ;; If face each other, only do seek
     (when (and (> (calc-inner-product to-evader vehicle-heading))
                ;; acos(0.95) = 18 degrees

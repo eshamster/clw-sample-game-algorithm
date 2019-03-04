@@ -24,7 +24,7 @@
 
 (defun.ps+ update-vehicle (vehicle)
   (with-ecs-components (vehicle-component point-2d) vehicle
-    (with-slots (velocity mass max-speed heading) vehicle-component
+    (with-slots (velocity mass max-speed) vehicle-component
       (let* ((steering-force (calc-steering vehicle))
              (accele (/-vec-scalar steering-force mass))
              (time-elapsed 1))
@@ -32,6 +32,5 @@
         (truncatef-vector-2d velocity max-speed)
         (incf-vector-2d point-2d (*-vec-scalar velocity time-elapsed))
         (when (> (vector-2d-abs velocity) 0.000001)
-          (setf heading (setf-vector-2d-abs (clone-vector-2d velocity) 1.0))
           (setf (point-2d-angle point-2d)
-                (vector-2d-angle heading)))))))
+                (vector-2d-angle velocity)))))))
