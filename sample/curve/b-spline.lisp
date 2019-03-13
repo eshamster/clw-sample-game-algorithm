@@ -12,14 +12,22 @@
 (defun.ps+ calc-b-spline-point (control-points knots-generator alpha)
   (let* ((num-control-points (length control-points))
          (knots (funcall knots-generator num-control-points))
-         (result-point (make-point-2d)))
-    (dotimes (i num-control-points)
-      (let ((basis (calc-b-spline-basis num-control-points knots i alpha))
-            (x (point-2d-x (nth i control-points)))
-            (y (point-2d-y (nth i control-points))))
-        (incf (point-2d-x result-point) (* x basis))
-        (incf (point-2d-y result-point) (* y basis))))
-    result-point))
+         (dim (calc-dimension (length knots) num-control-points)))
+    (if (< dim num-control-points)
+        (let ((result-point (make-point-2d)))
+          (dotimes (i num-control-points)
+            (let* ((adjusted-alpha
+                    (lerp-scalar (aref knots dim)
+                                 (aref knots num-control-points)
+                                 alpha))
+                   (basis (calc-b-spline-basis num-control-points knots i
+                                               adjusted-alpha))
+                   (x (point-2d-x (nth i control-points)))
+                   (y (point-2d-y (nth i control-points))))
+              (incf (point-2d-x result-point) (* x basis))
+              (incf (point-2d-y result-point) (* y basis))))
+          result-point)
+        (make-point-2d))))
 
 (defun.ps+ calc-b-spline-basis (num-control-points knots index-control-point alpha)
   "So-called B-spline basis function"
@@ -49,9 +57,12 @@
                                   (- (aref knots (+ i-knot cur-dim 1))
                                      (aref knots (+ i-knot 1))))
                        (rec (1+ i-knot) (1- cur-dim)))))))
-    (let ((dim (- (length knots) num-control-points 1)))
+    (let ((dim (calc-dimension (length knots) num-control-points)))
       (assert (>= dim 0))
       (rec index-control-point dim))))
+
+(defun.ps+ calc-dimension (num-knots num-control-points)
+  (- num-knots num-control-points 1))
 
 ;; --- make knots --- ;;
 
