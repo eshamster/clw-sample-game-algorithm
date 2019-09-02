@@ -104,7 +104,7 @@
     (clack:stop *server*)
     (setf *server* nil)))
 
-(defun start (&key (port 5000))
+(defun start (&key (port 5000) (address "0.0.0.0"))
   (stop)
   (ensure-js-files *js-dir*)
   (setf *server*
@@ -117,4 +117,5 @@
                                nil))
                    :root *root-dir*)
           *app*) 
-         :port port)))
+         :port port
+         :address address)))
